@@ -480,7 +480,8 @@ export default function ResourceList() {
             ),
             cell: ({ row }) => <div>{row.getValue("name")}</div>,
             filterFn: (row, id, value) => {
-                return row.getValue(id).toLowerCase().includes(value.toLowerCase())
+                const val = row.getValue(id)
+                return typeof val === "string" ? val.toLowerCase().includes(value.toLowerCase()) : false
             },
         },
         {
@@ -504,7 +505,8 @@ export default function ResourceList() {
             ),
             cell: ({ row }) => <div>{row.getValue("applicationId")}</div>,
             filterFn: (row, id, value) => {
-                return row.getValue(id).toLowerCase().includes(value.toLowerCase())
+                const val = row.getValue(id)
+                return typeof val === "string" ? val.toLowerCase().includes(value.toLowerCase()) : false
             },
         },
         {
@@ -528,7 +530,8 @@ export default function ResourceList() {
             ),
             cell: ({ row }) => <div>{row.getValue("application")}</div>,
             filterFn: (row, id, value) => {
-                return row.getValue(id).toLowerCase().includes(value.toLowerCase())
+                const val = row.getValue(id)
+                return typeof val === "string" ? val.toLowerCase().includes(value.toLowerCase()) : false
             },
         },
         {
@@ -557,7 +560,8 @@ export default function ResourceList() {
                 </div>
             ),
             filterFn: (row, id, value) => {
-                return row.getValue(id).toLowerCase().includes(value.toLowerCase())
+                const val = row.getValue(id)
+                return typeof val === "string" ? val.toLowerCase().includes(value.toLowerCase()) : false
             },
         },
         {
@@ -586,7 +590,8 @@ export default function ResourceList() {
                 </div>
             ),
             filterFn: (row, id, value) => {
-                return row.getValue(id).toLowerCase().includes(value.toLowerCase())
+                const val = row.getValue(id)
+                return typeof val === "string" ? val.toLowerCase().includes(value.toLowerCase()) : false
             },
         },
         {
