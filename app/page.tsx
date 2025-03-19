@@ -108,7 +108,7 @@ export default function IssueTrackingPage() {
             </header>
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-6">
+            <div className="mx-auto px-4 py-6">
                 <Tabs defaultValue="overview" className="w-full">
                     <TabsList className="bg-white border-b w-full justify-start rounded-none h-auto p-0">
                         <TabsTrigger
