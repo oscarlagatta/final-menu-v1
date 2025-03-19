@@ -19,6 +19,7 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    Download,
     Filter,
     Mail,
     Pencil,
@@ -26,6 +27,7 @@ import {
     SortDesc,
     Trash2,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -63,7 +65,7 @@ type Resource = {
     application: string
     manager: string
     managerSecondary?: string
-    portfolio: string
+    portfolio?: string
     team?: string
     resourceFunction?: string
 }
@@ -303,6 +305,7 @@ export default function ResourceList() {
     const [isEditSheetOpen, setIsEditSheetOpen] = React.useState(false)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
     const [globalFilter, setGlobalFilter] = React.useState("")
+    const [isExporting, setIsExporting] = React.useState(false)
 
     // Initialize form with react-hook-form
     const form = useForm<z.infer<typeof formSchema>>({
@@ -362,6 +365,96 @@ export default function ResourceList() {
         })
 
         setIsDeleteDialogOpen(false)
+    }
+
+    // Function to export table data to Excel
+    const exportToExcel = async () => {
+        try {
+            setIsExporting(true)
+
+            // Get the current filtered data
+            const filteredData = table.getFilteredRowModel().rows
+
+            // Get visible columns (excluding the actions column)
+            const visibleColumns = table.getVisibleLeafColumns().filter((col) => col.id !== "actions")
+
+            // Create data rows with proper formatting
+            const rows = filteredData.map((row) => {
+                const rowData: Record<string, any> = {}
+
+                // Process each column
+                visibleColumns.forEach((column) => {
+                    const id = column.id
+
+                    // Set column headers with proper names
+                    if (id === "name") {
+                        rowData["Name"] = row.original.name
+                    } else if (id === "applicationId") {
+                        rowData["ApplicationId"] = row.original.applicationId
+                    } else if (id === "application") {
+                        rowData["Application"] = row.original.application
+                    } else if (id === "manager") {
+                        // Combine manager and managerSecondary
+                        rowData["Manager"] =
+                            `${row.original.manager}${row.original.managerSecondary ? "\n" + row.original.managerSecondary : ""}`
+                    } else if (id === "portfolio") {
+                        // Combine portfolio and team
+                        rowData["Portfolio/Team"] =
+                            `${row.original.portfolio || ""}${row.original.team ? "\n" + row.original.team : ""}`
+                    } else if (id === "resourceFunction") {
+                        rowData["Resource Function"] = row.original.resourceFunction || ""
+                    }
+                })
+
+                return rowData
+            })
+
+            // Create worksheet with explicit column order
+            const worksheet = XLSX.utils.json_to_sheet(rows)
+
+            // Set column order
+            const columnOrder = ["Name", "ApplicationId", "Application", "Manager", "Portfolio/Team", "Resource Function"]
+
+            // Create workbook
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Resources")
+
+            // Generate Excel file
+            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+
+            // Convert to Blob
+            const blob = new Blob([excelBuffer], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            })
+
+            // Create download link
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.href = url
+            link.download = `Resource_List_${new Date().toISOString().split("T")[0]}.xlsx`
+
+            // Trigger download
+            document.body.appendChild(link)
+            link.click()
+
+            // Cleanup
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+
+            toast({
+                title: "Export successful",
+                description: "Resource list has been exported to Excel.",
+            })
+        } catch (error) {
+            console.error("Export failed:", error)
+            toast({
+                title: "Export failed",
+                description: "There was an error exporting the resource list.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsExporting(false)
+        }
     }
 
     // Define columns for the data table
@@ -635,7 +728,18 @@ export default function ResourceList() {
         <div className="w-full">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-xl font-semibold">Resource List</h1>
-                <Button className="bg-blue-900 hover:bg-blue-800">Export Resource</Button>
+                <Button className="bg-blue-900 hover:bg-blue-800" onClick={exportToExcel} disabled={isExporting}>
+                    {isExporting ? (
+                        <span className="flex items-center">
+              <span className="mr-2">Exporting...</span>
+            </span>
+                    ) : (
+                        <span className="flex items-center">
+              <Download className="mr-2 h-4 w-4" />
+              Export Resource
+            </span>
+                    )}
+                </Button>
             </div>
 
             <div className="space-y-2 mb-4">
