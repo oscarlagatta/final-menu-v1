@@ -63,7 +63,7 @@ type Resource = {
     application: string
     manager: string
     managerSecondary?: string
-    portfolio?: string
+    portfolio: string
     team?: string
     resourceFunction?: string
 }
@@ -579,6 +579,12 @@ export default function ResourceList() {
         table.setPageSize(20)
     }, [table])
 
+    // Sync table pagination state with our local state
+    React.useEffect(() => {
+        setPageIndex(table.getState().pagination.pageIndex)
+        setPageSize(table.getState().pagination.pageSize)
+    }, [table.getState().pagination.pageIndex, table.getState().pagination.pageSize])
+
     // Column filter dropdown component
     function ColumnFilterDropdown({ column, title }: { column: any; title: string }) {
         const [open, setOpen] = React.useState(false)
@@ -724,7 +730,11 @@ export default function ResourceList() {
                     <Select
                         value={`${pageSize}`}
                         onValueChange={(value) => {
-                            table.setPageSize(Number(value))
+                            const newPageSize = Number(value)
+                            table.setPageSize(newPageSize)
+                            setPageSize(newPageSize)
+                            table.setPageIndex(0)
+                            setPageIndex(0)
                         }}
                     >
                         <SelectTrigger className="h-8 w-[70px]">
@@ -755,7 +765,10 @@ export default function ResourceList() {
                         <Button
                             variant="outline"
                             className="hidden h-8 w-8 p-0 lg:flex"
-                            onClick={() => table.setPageIndex(0)}
+                            onClick={() => {
+                                table.setPageIndex(0)
+                                setPageIndex(0)
+                            }}
                             disabled={!table.getCanPreviousPage()}
                         >
                             <span className="sr-only">Go to first page</span>
@@ -764,7 +777,10 @@ export default function ResourceList() {
                         <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
-                            onClick={() => table.previousPage()}
+                            onClick={() => {
+                                table.previousPage()
+                                setPageIndex((prev) => prev - 1)
+                            }}
                             disabled={!table.getCanPreviousPage()}
                         >
                             <span className="sr-only">Go to previous page</span>
@@ -778,7 +794,10 @@ export default function ResourceList() {
                         <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
-                            onClick={() => table.nextPage()}
+                            onClick={() => {
+                                table.nextPage()
+                                setPageIndex((prev) => prev + 1)
+                            }}
                             disabled={!table.getCanNextPage()}
                         >
                             <span className="sr-only">Go to next page</span>
@@ -787,7 +806,11 @@ export default function ResourceList() {
                         <Button
                             variant="outline"
                             className="hidden h-8 w-8 p-0 lg:flex"
-                            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                            onClick={() => {
+                                const lastPageIndex = table.getPageCount() - 1
+                                table.setPageIndex(lastPageIndex)
+                                setPageIndex(lastPageIndex)
+                            }}
                             disabled={!table.getCanNextPage()}
                         >
                             <span className="sr-only">Go to last page</span>
