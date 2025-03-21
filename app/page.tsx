@@ -1,160 +1,114 @@
 "use client"
 
-import { useState } from "react"
-import { User } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useAuth } from "./auth"
+import { Users, X } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+export default function Banner() {
+    const auth = useAuth()
+    const userDetails = auth?.userDetails || {}
+    const [isLoaded, setIsLoaded] = useState(false)
+    const [isBackgroundAnimated, setIsBackgroundAnimated] = useState(false)
+    const [timeGreeting, setTimeGreeting] = useState("Hello")
+    const [isVisible, setIsVisible] = useState(true)
 
-export default function ServiceImprovementToolbox() {
-    const [applications, setApplications] = useState<string[]>([])
-    const [activeTab, setActiveTab] = useState("new-submission")
-
-    const addApplication = () => {
-        setApplications([...applications, "Application " + (applications.length + 1)])
+    // Handle banner dismissal - only for current session
+    const dismissBanner = () => {
+        setIsVisible(false)
     }
 
-    const viewSubmissionHistory = () => {
-        setActiveTab("submission-history")
+    // Determine time-based greeting
+    useEffect(() => {
+        const getTimeBasedGreeting = () => {
+            const hour = new Date().getHours()
+
+            if (hour >= 5 && hour < 12) {
+                return "Good morning"
+            } else if (hour >= 12 && hour < 18) {
+                return "Good afternoon"
+            } else {
+                return "Good evening"
+            }
+        }
+
+        setTimeGreeting(getTimeBasedGreeting())
+    }, [])
+
+    // Delay animation until component is mounted and a short delay has passed
+    useEffect(() => {
+        // Small timeout to ensure the page has visually settled
+        const timer = setTimeout(() => {
+            setIsLoaded(true)
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [])
+
+    // If banner is dismissed, don't render anything
+    if (!isVisible) {
+        return null
     }
 
     return (
-        <div className="container mx-auto p-4 max-w-7xl">
-            <h1 className="text-2xl font-semibold text-gray-800 mb-4">Service Improvement & Risk Submission Toolbox</h1>
+        <div
+            className="relative mb-6 w-full overflow-hidden rounded-md"
+            style={{
+                opacity: isLoaded ? 1 : 0,
+                transition: "opacity 0.5s ease-in-out",
+            }}
+        >
+            {/* Single uniform gradient background - US flag colors */}
+            <div
+                className="absolute inset-0 bg-gradient-to-r from-[#002868] to-[#BF0A30] bg-size-200%"
+                style={{
+                    backgroundPosition: isLoaded ? "100% 50%" : "0% 50%",
+                    transition: "background-position 1.5s ease-in-out",
+                }}
+                onTransitionEnd={() => setIsBackgroundAnimated(true)}
+            />
 
-            <Separator className="h-1 bg-blue-900 mb-6" />
+            {/* Close button */}
+            <button
+                onClick={dismissBanner}
+                className="absolute top-2 right-2 text-white/80 hover:text-white transition-colors z-10"
+                aria-label="Close banner"
+            >
+                <X size={18} />
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Sidebar */}
-                <div className="md:col-span-1 space-y-6">
-                    <div className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-lg">
-                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <User className="h-10 w-10 text-red-500" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-gray-800">Hi, Alex</p>
-                            <p className="text-blue-600 text-sm">alex.example@company.com</p>
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-gray-700 mb-4">0 submissions this year</p>
-                        <Button
-                            variant="outline"
-                            className="w-full bg-blue-900 text-white hover:bg-blue-800"
-                            onClick={viewSubmissionHistory}
-                        >
-                            View previous submissions
-                        </Button>
-                    </div>
+            <div className="relative flex items-center py-3 px-4">
+                <div className="bg-white/10 flex h-10 w-10 items-center justify-center rounded-full mr-4">
+                    <Users className="h-5 w-5 text-white" />
                 </div>
 
-                {/* Main Content */}
-                <div className="md:col-span-3">
-                    <Tabs
-                        value={activeTab}
-                        onValueChange={setActiveTab}
-                        className="w-full transition-all duration-300 ease-in-out"
+                <div className="flex flex-col justify-center">
+                    <h2
+                        className="text-2xl font-bold text-white leading-tight"
+                        style={{
+                            opacity: isBackgroundAnimated ? 1 : 0,
+                            transform: isBackgroundAnimated ? "scale(1) translateY(0)" : "scale(0.5) translateY(10px)",
+                            transition: "opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                            transitionDelay: "0.6s",
+                        }}
                     >
-                        <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-none h-12">
-                            <TabsTrigger
-                                value="new-submission"
-                                className="data-[state=active]:bg-white data-[state=active]:shadow-none rounded-none"
+                        {timeGreeting}, {userDetails?.firstName || "user"}!
+                    </h2>
+
+                    <div className="flex text-xs text-white">
+                        {["W", "e", "l", "c", "o", "m", "e"].map((letter, index) => (
+                            <span
+                                key={index}
+                                style={{
+                                    opacity: isBackgroundAnimated ? 1 : 0,
+                                    transform: isBackgroundAnimated ? "translateY(0)" : "translateY(20px)",
+                                    transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
+                                    transitionDelay: `${1.2 + index * 0.1}s`,
+                                }}
                             >
-                                New submission
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="submission-history"
-                                className="data-[state=active]:bg-white data-[state=active]:shadow-none rounded-none"
-                            >
-                                Submission History
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent
-                            value="new-submission"
-                            className="p-6 bg-white border border-gray-200 rounded-sm mt-0 min-h-[500px]"
-                        >
-                            <form className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="font-medium text-gray-900">Submission Type</label>
-                                    <Select>
-                                        <SelectTrigger className="w-full h-12">
-                                            <SelectValue placeholder="Select Type of Submission" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="improvement">Service Improvement</SelectItem>
-                                            <SelectItem value="risk">Risk Submission</SelectItem>
-                                            <SelectItem value="incident">Incident Report</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="font-medium text-gray-900">Title</label>
-                                    <Textarea
-                                        placeholder="Provide a short one-line description of the concern"
-                                        className="min-h-[80px]"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="font-medium text-gray-900">Applications</label>
-
-                                    {applications.length > 0 && (
-                                        <div className="space-y-2 mt-2 mb-2">
-                                            {applications.map((app, index) => (
-                                                <div key={index} className="p-3 border rounded-md bg-gray-50">
-                                                    {app}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="border-blue-900 text-blue-900 mt-1"
-                                        onClick={addApplication}
-                                    >
-                                        Add Application
-                                    </Button>
-                                </div>
-
-                                <div className="flex justify-end">
-                                    <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
-                                        Submit
-                                    </Button>
-                                </div>
-                            </form>
-                        </TabsContent>
-
-                        <TabsContent
-                            value="submission-history"
-                            className="p-6 bg-white border border-gray-200 rounded-sm mt-0 min-h-[500px]"
-                        >
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                    <tr className="border-b">
-                                        <th className="text-left py-3 px-4 font-medium text-gray-900">RGI Id</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-900">Title</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-900">Delivery Lead</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-900">Created Date</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {/* Empty state - no submissions yet */}
-                                    {/* You can add actual data rows here when available */}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
+                {letter}
+              </span>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
