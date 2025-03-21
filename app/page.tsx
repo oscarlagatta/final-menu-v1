@@ -54,7 +54,7 @@ export default function Banner() {
 
     return (
         <div
-            className="relative mb-6 w-full overflow-hidden rounded-md"
+            className="relative mb-4 w-full overflow-hidden rounded-md"
             style={{
                 opacity: isLoaded ? 1 : 0,
                 transition: "opacity 0.3s ease-in-out", // Faster fade-in
@@ -73,24 +73,24 @@ export default function Banner() {
             {/* Close button */}
             <button
                 onClick={dismissBanner}
-                className="absolute top-2 right-2 text-white/80 hover:text-white transition-colors z-10"
+                className="absolute top-1 right-1 text-white/80 hover:text-white transition-colors z-10"
                 aria-label="Close banner"
             >
-                <X size={18} />
+                <X size={16} />
             </button>
 
-            <div className="relative py-3 px-4 lg:py-4 lg:px-6 xl:py-5 xl:px-8">
+            <div className="relative py-2 px-3 lg:py-2.5 lg:px-4 xl:py-3 xl:px-5">
                 {/* Main banner content with flex layout */}
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-center">
                     {/* Left side with greeting */}
                     <div className="flex items-center">
-                        <div className="bg-white/10 flex h-10 w-10 items-center justify-center rounded-full mr-4 lg:h-12 lg:w-12 xl:h-14 xl:w-14">
-                            <Users className="h-5 w-5 text-white lg:h-6 lg:w-6 xl:h-7 xl:w-7" />
+                        <div className="bg-white/10 flex h-8 w-8 items-center justify-center rounded-full mr-3 lg:h-9 lg:w-9 xl:h-10 xl:w-10">
+                            <Users className="h-4 w-4 text-white lg:h-4.5 lg:w-4.5 xl:h-5 xl:w-5" />
                         </div>
 
                         <div className="flex flex-col justify-center">
                             <h2
-                                className="text-2xl font-bold text-white leading-tight lg:text-3xl xl:text-4xl"
+                                className="text-lg font-bold text-white leading-tight lg:text-xl xl:text-2xl"
                                 style={{
                                     opacity: isBackgroundAnimated ? 1 : 0,
                                     transform: isBackgroundAnimated ? "scale(1) translateY(0)" : "scale(0.5) translateY(10px)",
@@ -101,7 +101,7 @@ export default function Banner() {
                                 {timeGreeting}, {userDetails?.firstName || "user"}!
                             </h2>
 
-                            <div className="flex text-xs text-white lg:text-sm xl:text-base">
+                            <div className="flex text-[10px] text-white lg:text-xs xl:text-sm">
                                 {Array.from("Welcome to the BPS Portal").map((letter, index) => (
                                     <span
                                         key={index}
@@ -122,7 +122,7 @@ export default function Banner() {
 
                     {/* Right side with metrics - improved for ultrawide screens */}
                     <motion.div
-                        className="flex gap-2 mr-8 lg:gap-3 xl:gap-4 2xl:gap-5"
+                        className="flex gap-1.5 mr-6 lg:gap-2 xl:gap-3 2xl:gap-4"
                         initial={{ opacity: 0, x: 20 }}
                         animate={isBackgroundAnimated ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
                         transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }} // Reduced duration and delay
@@ -137,8 +137,6 @@ export default function Banner() {
         </div>
     )
 }
-
-
 import type { LucideIcon } from "lucide-react"
 
 interface MetricCardProps {
@@ -149,13 +147,13 @@ interface MetricCardProps {
 
 export function MetricCard({ icon: Icon, value, label }: MetricCardProps) {
     return (
-        <div className="bg-white/15 backdrop-blur-sm flex items-center gap-2 rounded-md p-2 shadow-[0_2px_10px_rgba(0,0,0,0.15)] border border-white/10 hover:bg-white/25 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(255,255,255,0.2)] hover:scale-105 hover:-translate-y-1 lg:p-3 xl:p-4 2xl:p-5">
-            <div className="bg-white/20 rounded-full p-1.5 flex items-center justify-center lg:p-2 xl:p-2.5 2xl:p-3">
-                <Icon className="h-3.5 w-3.5 text-white lg:h-4 lg:w-4 xl:h-5 xl:w-5 2xl:h-6 2xl:w-6" />
+        <div className="bg-white/15 backdrop-blur-sm flex items-center gap-2 rounded-md p-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.15)] border border-white/10 hover:bg-white/25 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(255,255,255,0.2)] hover:scale-105 lg:p-2 xl:p-2.5 2xl:p-3">
+            <div className="bg-white/20 rounded-full p-1 flex items-center justify-center lg:p-1.5 xl:p-1.5 2xl:p-2">
+                <Icon className="h-3 w-3 text-white lg:h-3.5 lg:w-3.5 xl:h-4 xl:w-4 2xl:h-5 2xl:w-5" />
             </div>
             <div className="flex flex-col">
-                <div className="text-sm font-bold text-white lg:text-base xl:text-lg 2xl:text-xl">{value}</div>
-                <div className="text-[10px] text-white/90 lg:text-xs xl:text-sm 2xl:text-base">{label}</div>
+                <div className="text-xs font-bold text-white lg:text-sm xl:text-base 2xl:text-lg">{value}</div>
+                <div className="text-[8px] text-white/90 lg:text-[10px] xl:text-xs 2xl:text-sm">{label}</div>
             </div>
         </div>
     )
