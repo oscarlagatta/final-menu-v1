@@ -39,10 +39,10 @@ export default function Banner() {
 
     // Delay animation until component is mounted and a short delay has passed
     useEffect(() => {
-        // Small timeout to ensure the page has visually settled
+        // Reduced timeout to make the banner appear faster
         const timer = setTimeout(() => {
             setIsLoaded(true)
-        }, 300)
+        }, 100)
 
         return () => clearTimeout(timer)
     }, [])
@@ -57,15 +57,15 @@ export default function Banner() {
             className="relative mb-6 w-full overflow-hidden rounded-md"
             style={{
                 opacity: isLoaded ? 1 : 0,
-                transition: "opacity 0.5s ease-in-out",
+                transition: "opacity 0.3s ease-in-out", // Faster fade-in
             }}
         >
-            {/* Single uniform gradient background - US flag colors */}
+            {/* Enhanced gradient background with more vibrant colors */}
             <div
                 className="absolute inset-0 bg-gradient-to-r from-[#002868] to-[#BF0A30] bg-size-200%"
                 style={{
                     backgroundPosition: isLoaded ? "100% 50%" : "0% 50%",
-                    transition: "background-position 1.5s ease-in-out",
+                    transition: "background-position 1s ease-in-out", // Faster gradient transition
                 }}
                 onTransitionEnd={() => setIsBackgroundAnimated(true)}
             />
@@ -79,52 +79,53 @@ export default function Banner() {
                 <X size={18} />
             </button>
 
-            <div className="relative py-3 px-4">
+            <div className="relative py-3 px-4 lg:py-4 lg:px-6 xl:py-5 xl:px-8">
                 {/* Main banner content with flex layout */}
                 <div className="flex justify-between items-start">
                     {/* Left side with greeting */}
                     <div className="flex items-center">
-                        <div className="bg-white/10 flex h-10 w-10 items-center justify-center rounded-full mr-4">
-                            <Users className="h-5 w-5 text-white" />
+                        <div className="bg-white/10 flex h-10 w-10 items-center justify-center rounded-full mr-4 lg:h-12 lg:w-12 xl:h-14 xl:w-14">
+                            <Users className="h-5 w-5 text-white lg:h-6 lg:w-6 xl:h-7 xl:w-7" />
                         </div>
 
                         <div className="flex flex-col justify-center">
                             <h2
-                                className="text-2xl font-bold text-white leading-tight"
+                                className="text-2xl font-bold text-white leading-tight lg:text-3xl xl:text-4xl"
                                 style={{
                                     opacity: isBackgroundAnimated ? 1 : 0,
                                     transform: isBackgroundAnimated ? "scale(1) translateY(0)" : "scale(0.5) translateY(10px)",
-                                    transition: "opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                    transitionDelay: "0.6s",
+                                    transition: "opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                                    transitionDelay: "0.2s", // Reduced delay
                                 }}
                             >
                                 {timeGreeting}, {userDetails?.firstName || "user"}!
                             </h2>
 
-                            <div className="flex text-xs text-white">
-                                {["W", "e", "l", "c", "o", "m", "e"].map((letter, index) => (
+                            <div className="flex text-xs text-white lg:text-sm xl:text-base">
+                                {Array.from("Welcome to the BPS Portal").map((letter, index) => (
                                     <span
                                         key={index}
                                         style={{
                                             opacity: isBackgroundAnimated ? 1 : 0,
                                             transform: isBackgroundAnimated ? "translateY(0)" : "translateY(20px)",
-                                            transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
-                                            transitionDelay: `${1.2 + index * 0.1}s`,
+                                            transition: "opacity 0.3s ease-out, transform 0.3s ease-out", // Faster transitions
+                                            transitionDelay: `${0.3 + index * 0.02}s`, // Reduced base delay
+                                            marginRight: letter === " " ? "0.25em" : "0.05em",
                                         }}
                                     >
-                    {letter}
+                    {letter === " " ? "\u00A0" : letter}
                   </span>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* Right side with metrics - moved left with mr-8 */}
+                    {/* Right side with metrics - improved for ultrawide screens */}
                     <motion.div
-                        className="flex gap-2 mr-8"
+                        className="flex gap-2 mr-8 lg:gap-3 xl:gap-4 2xl:gap-5"
                         initial={{ opacity: 0, x: 20 }}
                         animate={isBackgroundAnimated ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 1.0 }}
+                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }} // Reduced duration and delay
                         onAnimationComplete={() => setIsMetricsAnimated(true)}
                     >
                         <MetricCard icon={Users} value="40" label="Risks Submitted" />
@@ -148,13 +149,13 @@ interface MetricCardProps {
 
 export function MetricCard({ icon: Icon, value, label }: MetricCardProps) {
     return (
-        <div className="bg-white/15 backdrop-blur-sm flex items-center gap-2 rounded-md p-2 shadow-[0_2px_10px_rgba(0,0,0,0.15)] border border-white/10 hover:bg-white/20 transition-colors">
-            <div className="bg-white/20 rounded-full p-1.5 flex items-center justify-center">
-                <Icon className="h-3.5 w-3.5 text-white" />
+        <div className="bg-white/15 backdrop-blur-sm flex items-center gap-2 rounded-md p-2 shadow-[0_2px_10px_rgba(0,0,0,0.15)] border border-white/10 hover:bg-white/25 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(255,255,255,0.2)] hover:scale-105 hover:-translate-y-1 lg:p-3 xl:p-4 2xl:p-5">
+            <div className="bg-white/20 rounded-full p-1.5 flex items-center justify-center lg:p-2 xl:p-2.5 2xl:p-3">
+                <Icon className="h-3.5 w-3.5 text-white lg:h-4 lg:w-4 xl:h-5 xl:w-5 2xl:h-6 2xl:w-6" />
             </div>
             <div className="flex flex-col">
-                <div className="text-sm font-bold text-white">{value}</div>
-                <div className="text-[10px] text-white/90">{label}</div>
+                <div className="text-sm font-bold text-white lg:text-base xl:text-lg 2xl:text-xl">{value}</div>
+                <div className="text-[10px] text-white/90 lg:text-xs xl:text-sm 2xl:text-base">{label}</div>
             </div>
         </div>
     )
