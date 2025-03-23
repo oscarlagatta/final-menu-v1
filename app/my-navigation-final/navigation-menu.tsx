@@ -5,7 +5,6 @@ import type React from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Link } from "react-router-dom"
 import { useState } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { BookOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react"
@@ -140,7 +139,7 @@ const NavItem = ({ id, title, icon, href, isActive = false, onClick, isCollapsed
                             onClick={onClick}
                         >
                             {icon}
-                            {href ? <Link to={href}>{title}</Link> : <span>{title}</span>}
+                            <span className="sr-only">{title}</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>{title}</TooltipContent>
@@ -150,24 +149,10 @@ const NavItem = ({ id, title, icon, href, isActive = false, onClick, isCollapsed
     }
 
     return (
-        <>
-            {href ? (
-                <Link to={href} className={cn(`mx-2`, isActive && "bg-blue-700 text-white")}>
-                    {icon}
-                    {title}
-                </Link>
-            ) : (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(`mx-2`, isActive && "bg-blue-700 text-white")}
-                    onClick={onClick}
-                >
-                    {icon}
-                    {title}
-                </Button>
-            )}
-        </>
+        <Button variant="ghost" size="sm" className={cn(`mx-2`, isActive && "bg-blue-700 text-white")} onClick={onClick}>
+            {icon && <span className="mr-2">{icon}</span>}
+            <span>{title}</span>
+        </Button>
     )
 }
 
