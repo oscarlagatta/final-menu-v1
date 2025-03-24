@@ -7,7 +7,7 @@ interface BreadcrumbNavigationProps {
     onSubItemClick: (id: any) => void
 }
 
-// Replace the breadcrumb generation logic with this approach that follows the user's requirements
+// Update the breadcrumb generation logic to ensure proper hierarchy
 export function BreadcrumbNavigation({ activeItem, activeSubItem, onSubItemClick }: BreadcrumbNavigationProps) {
     if (!activeItem) {
         return (
@@ -21,22 +21,20 @@ export function BreadcrumbNavigation({ activeItem, activeSubItem, onSubItemClick
     // Always start with Home
     const breadcrumbs = [{ id: "home", title: "Home", href: "/" }]
 
-    // Always add the active main item from sidebar
-    if (activeItem) {
-        breadcrumbs.push({
-            id: activeItem.id,
-            title: activeItem.title,
-            href: `/${activeItem.id}`,
-        })
+    // Add the active main item from sidebar
+    breadcrumbs.push({
+        id: activeItem.id,
+        title: activeItem.title,
+        href: `/${activeItem.id}`,
+    })
 
-        // Add the sub-item only if it exists
-        if (activeSubItem) {
-            breadcrumbs.push({
-                id: activeSubItem.id,
-                title: activeSubItem.title,
-                href: `/${activeItem.id}/${activeSubItem.id}`,
-            })
-        }
+    // Add the sub-item only if it exists and belongs to the current active item
+    if (activeSubItem) {
+        breadcrumbs.push({
+            id: activeSubItem.id,
+            title: activeSubItem.title,
+            href: `/${activeItem.id}/${activeSubItem.id}`,
+        })
     }
 
     return (

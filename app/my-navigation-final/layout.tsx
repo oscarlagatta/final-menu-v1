@@ -157,15 +157,20 @@ export function Layout() {
         return null
     }
 
-    // Update the handleItemClick function to properly reset the breadcrumb path when clicking on sidebar items
+    // Update the handleItemClick function to ensure proper navigation
     const handleItemClick = (itemId: string) => {
         const item = findMenu(itemId)
+
+        // Set the active item and reset any sub-item
         setActiveItem(item)
-        setActiveSubItem(null) // Reset sub-item when main item changes
+        setActiveSubItem(null)
+
         setContentKey((prev) => prev + 1)
 
         // Navigate to the new route
-        item && navigate(`/${item.id}`)
+        if (item) {
+            navigate(`/${item.id}`)
+        }
     }
 
     // Update the handleSubItemClick function to properly handle top menu selections
@@ -182,6 +187,7 @@ export function Layout() {
         }
     }
 
+    // Update the useEffect that handles URL changes to properly reset the state
     useEffect(() => {
         if (location && location.pathname) {
             const path = location.pathname.split("/").filter(Boolean)
@@ -191,12 +197,13 @@ export function Layout() {
                 const mainItem = findMenu(mainItemId)
 
                 if (mainItem) {
+                    // Set the active item from the URL path
                     setActiveItem(mainItem)
 
-                    // Reset activeSubItem first
+                    // Always reset activeSubItem when the URL changes to a main item
                     setActiveSubItem(null)
 
-                    // Then set it if there's a valid sub-item in the path
+                    // Only set subItem if there's a valid sub-item in the path
                     if (path.length > 1) {
                         const subItemId = path[1]
                         const subItem = findSubMenuItems(mainItem, subItemId)
