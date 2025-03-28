@@ -13,10 +13,72 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TagManager} from "@/components/dashboard/components/tag-manager";
+import {RelatedItems} from "@/components/dashboard/components/related-items";
 
+
+
+interface Tag {
+    id: string
+    name: string
+}
+
+interface Relationship {
+    id: string
+    recordId: string
+    title: string
+    type: string
+    initiatedRgi: boolean
+}
+
+// Tags state management
+const [tags, setTags] = useState<Tag[]>([
+    { id: "1", name: "ROI" },
+    { id: "2", name: "ACH" },
+    { id: "3", name: "Failover" },
+    { id: "4", name: "Planning" },
+    { id: "5", name: "Testing" },
+    { id: "6", name: "ROI-Plan" },
+    { id: "7", name: "System Test" },
+])
+
+// Relationship management
+const [relationships, setRelationships] = useState<Relationship[]>([
+    { id: "1", recordId: "RP-55", title: "PROD/QA Failover Time Concerns", type: "Incident", initiatedRgi: false },
+    { id: "2", recordId: "ROI-3", title: "Issue #123", type: "CIMA", initiatedRgi: true },
+    { id: "3", recordId: "ROI-4", title: "YourPortfolio", type: "Problem", initiatedRgi: false },
+])
+
+// Mock database of existing records for search
+const existingRecords = [
+    { recordId: "RP-55", title: "PROD/QA Failover Time Concerns" },
+    { recordId: "ROI-3", title: "Issue #123" },
+    { recordId: "ROI-4", title: "YourPortfolio" },
+    { recordId: "RP-67", title: "Database Migration Issue" },
+    { recordId: "CIMA-123", title: "Network Outage Investigation" },
+    { recordId: "RISE-45", title: "Security Vulnerability Assessment" },
+    { recordId: "PPRT-89", title: "Performance Testing Results" },
+    { recordId: "ROI-12", title: "System Integration Failure" },
+]
 export default function IssueTrackingPage() {
     const [activeTab, setActiveTab] = useState("overview")
 
+
+    const handleAddTag = (newTag: Tag) => {
+        setTags([...tags, newTag])
+    }
+
+    const handleDeleteTag = (tagId: string) => {
+        setTags(tags.filter((tag) => tag.id !== tagId))
+        toast({
+            title: "Tag deleted",
+            description: "The tag has been successfully deleted.",
+        })
+    }
+
+    const handleAddRelationship = (newRelationship: Relationship) => {
+        setRelationships([...relationships, newRelationship])
+    }
     // Basic handler for input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         // In a real application, you would update state here
@@ -697,75 +759,77 @@ export default function IssueTrackingPage() {
 
                             {/* Right Sidebar */}
                             <div className="md:col-span-1">
-                                <div className="bg-white rounded-md shadow-sm p-4 mb-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-medium">
-                                            Tags <Badge className="ml-1 bg-gray-500 text-white">7</Badge>
-                                        </h3>
-                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                            <Plus className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        <Badge variant="secondary">ROI</Badge>
-                                        <Badge variant="secondary">{ACH}</Badge>
-                                        <Badge variant="secondary">Failover</Badge>
-                                        <Badge variant="secondary">Planning</Badge>
-                                        <Badge variant="secondary">Testing</Badge>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Badge variant="outline" className="bg-gray-100">
-                                            ROI-Plan
-                                        </Badge>
-                                        <Badge variant="outline" className="bg-gray-100">
-                                            System Test
-                                        </Badge>
-                                    </div>
-                                    <Button variant="link" size="sm" className="text-xs text-blue-500 mt-2">
-                                        Manage Tags
-                                    </Button>
-                                </div>
+                                {/*<div className="bg-white rounded-md shadow-sm p-4 mb-4">*/}
+                                {/*    <div className="flex items-center justify-between mb-2">*/}
+                                {/*        <h3 className="font-medium">*/}
+                                {/*            Tags <Badge className="ml-1 bg-gray-500 text-white">7</Badge>*/}
+                                {/*        </h3>*/}
+                                {/*        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">*/}
+                                {/*            <Plus className="h-4 w-4"/>*/}
+                                {/*        </Button>*/}
+                                {/*    </div>*/}
+                                {/*    <div className="flex flex-wrap gap-2 mb-4">*/}
+                                {/*        <Badge variant="secondary">ROI</Badge>*/}
+                                {/*        <Badge variant="secondary">{ACH}</Badge>*/}
+                                {/*        <Badge variant="secondary">Failover</Badge>*/}
+                                {/*        <Badge variant="secondary">Planning</Badge>*/}
+                                {/*        <Badge variant="secondary">Testing</Badge>*/}
+                                {/*    </div>*/}
+                                {/*    <div className="flex flex-wrap gap-2">*/}
+                                {/*        <Badge variant="outline" className="bg-gray-100">*/}
+                                {/*            ROI-Plan*/}
+                                {/*        </Badge>*/}
+                                {/*        <Badge variant="outline" className="bg-gray-100">*/}
+                                {/*            System Test*/}
+                                {/*        </Badge>*/}
+                                {/*    </div>*/}
+                                {/*    <Button variant="link" size="sm" className="text-xs text-blue-500 mt-2">*/}
+                                {/*        Manage Tags*/}
+                                {/*    </Button>*/}
+                                {/*</div>*/}
+                                <TagManager tags={tags} onAddTag={handleAddTag} onDeleteTag={handleDeleteTag} />
+                                {/*<div className="bg-white rounded-md shadow-sm p-4 mb-4">*/}
+                                {/*    <h3 className="font-medium mb-3">Related Items</h3>*/}
+                                {/*    <p className="text-sm text-gray-500 mb-4">Items that have been related to this entry*/}
+                                {/*        by ROI.</p>*/}
 
-                                <div className="bg-white rounded-md shadow-sm p-4 mb-4">
-                                    <h3 className="font-medium mb-3">Related Items</h3>
-                                    <p className="text-sm text-gray-500 mb-4">Items that have been related to this entry
-                                        by ROI.</p>
+                                {/*    <div className="space-y-3">*/}
+                                {/*        <div className="border rounded p-3">*/}
+                                {/*            <div className="flex justify-between">*/}
+                                {/*                <span className="text-sm font-medium">RP-55</span>*/}
+                                {/*                <Badge className="bg-blue-500">New</Badge>*/}
+                                {/*            </div>*/}
+                                {/*            <p className="text-sm">PROD/QA Failover Time Concerns</p>*/}
+                                {/*        </div>*/}
 
-                                    <div className="space-y-3">
-                                        <div className="border rounded p-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-medium">RP-55</span>
-                                                <Badge className="bg-blue-500">New</Badge>
-                                            </div>
-                                            <p className="text-sm">PROD/QA Failover Time Concerns</p>
-                                        </div>
+                                {/*        <div className="border rounded p-3">*/}
+                                {/*            <div className="flex justify-between">*/}
+                                {/*                <span className="text-sm font-medium">ROI-3</span>*/}
+                                {/*                <Badge className="bg-blue-500">New</Badge>*/}
+                                {/*            </div>*/}
+                                {/*            <p className="text-sm">Issue #123</p>*/}
+                                {/*        </div>*/}
 
-                                        <div className="border rounded p-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-medium">ROI-3</span>
-                                                <Badge className="bg-blue-500">New</Badge>
-                                            </div>
-                                            <p className="text-sm">Issue #123</p>
-                                        </div>
+                                {/*        <div className="border rounded p-3">*/}
+                                {/*            <div className="flex justify-between">*/}
+                                {/*                <span className="text-sm font-medium">ROI-4</span>*/}
+                                {/*                <Badge className="bg-blue-500">New</Badge>*/}
+                                {/*            </div>*/}
+                                {/*            <p className="text-sm">YourPortfolio</p>*/}
+                                {/*        </div>*/}
+                                {/*    </div>*/}
 
-                                        <div className="border rounded p-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-medium">ROI-4</span>
-                                                <Badge className="bg-blue-500">New</Badge>
-                                            </div>
-                                            <p className="text-sm">YourPortfolio</p>
-                                        </div>
-                                    </div>
+                                {/*    <div className="flex mt-4">*/}
+                                {/*        <Button variant="outline" size="sm" className="text-xs">*/}
+                                {/*            Add Relationship*/}
+                                {/*        </Button>*/}
+                                {/*        <Button variant="link" size="sm" className="text-xs text-blue-500">*/}
+                                {/*            Manage Relationships*/}
+                                {/*        </Button>*/}
+                                {/*    </div>*/}
+                                {/*</div>*/}
 
-                                    <div className="flex mt-4">
-                                        <Button variant="outline" size="sm" className="text-xs">
-                                            Add Relationship
-                                        </Button>
-                                        <Button variant="link" size="sm" className="text-xs text-blue-500">
-                                            Manage Relationships
-                                        </Button>
-                                    </div>
-                                </div>
+                                <RelatedItems relationships={relationships} onAddRelationship={handleAddRelationship} existingRecords={existingRecords} />
 
                                 <div className="bg-white rounded-md shadow-sm p-4">
                                     <h3 className="font-medium mb-3">Documentation Location</h3>
