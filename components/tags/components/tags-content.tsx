@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -23,6 +23,7 @@ import { DataTableColumnHeader } from "@/features/tags/components/data-table/dat
 import type { TagData } from "@/features/tags/types/tag-data"
 import { useToast } from "@/components/ui/use-toast"
 import { TagFormSheet } from "./dialogs/view-tag-sheet"
+import { TagsPageSkeleton } from "@/components/skeletons/tags-page-skeleton"
 
 // Dummy data for tags
 const tagData: TagData[] = [
@@ -59,7 +60,20 @@ export function TagsContent() {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
   const [isViewSheetOpen, setIsViewSheetOpen] = useState(false)
   const [selectedTag, setSelectedTag] = useState<TagData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+
+  // Simulate loading data
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      setIsLoading(false)
+    }
+
+    loadData()
+  }, [])
 
   const columns: ColumnDef<TagData>[] = [
     {
@@ -81,9 +95,9 @@ export function TagsContent() {
       accessorKey: "status",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => (
-        <Badge variant="outline" className="bg-green-600 hover:bg-green-600 text-white border-none">
-          {row.getValue("status")}
-        </Badge>
+          <Badge variant="outline" className="bg-green-600 hover:bg-green-600 text-white border-none">
+            {row.getValue("status")}
+          </Badge>
       ),
     },
     {
@@ -100,15 +114,15 @@ export function TagsContent() {
       id: "actions",
       cell: ({ row }) => {
         return (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 flex items-center"
-            onClick={() => handleViewClick(row.original)}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View
-          </Button>
+            <Button
+                variant="outline"
+                size="sm"
+                className="h-8 flex items-center"
+                onClick={() => handleViewClick(row.original)}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View
+            </Button>
         )
       },
     },
@@ -151,68 +165,73 @@ export function TagsContent() {
     },
   })
 
+  // Show skeleton while loading
+  if (isLoading) {
+    return <TagsPageSkeleton />
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search Tags"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-8"
-          />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search Tags"
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="pl-8"
+            />
+          </div>
+          <Button
+              variant="default"
+              className="bg-[#00205b] hover:bg-[#00205b]/90 text-white"
+              onClick={() => setIsAddSheetOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Tag
+          </Button>
         </div>
-        <Button
-          variant="default"
-          className="bg-[#00205b] hover:bg-[#00205b]/90 text-white"
-          onClick={() => setIsAddSheetOpen(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Tag
-        </Button>
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                    ))}
+                  </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                        {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                        ))}
+                      </TableRow>
+                  ))
+              ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results found.
+                    </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <DataTablePagination table={table} />
+
+        {/* Use the TagFormSheet for both adding and viewing/editing */}
+        <TagFormSheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen} mode="add" />
+
+        <TagFormSheet open={isViewSheetOpen} onOpenChange={setIsViewSheetOpen} tag={selectedTag} mode="view" />
       </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <DataTablePagination table={table} />
-
-      {/* Use the TagFormSheet for both adding and viewing/editing */}
-      <TagFormSheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen} mode="add" />
-
-      <TagFormSheet open={isViewSheetOpen} onOpenChange={setIsViewSheetOpen} tag={selectedTag} mode="view" />
-    </div>
   )
 }
 
