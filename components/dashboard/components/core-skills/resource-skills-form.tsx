@@ -17,8 +17,11 @@ import {ResourceInfoForm} from "@/components/dashboard/components/core-skills/re
 import {CoreSkillsForm} from "@/components/dashboard/components/core-skills/core-skills-form";
 import {TechnologySkillsForm} from "@/components/dashboard/components/core-skills/technology-skills-form";
 
+interface ResourceSkillsFormProps {
+    onComplete?: () => void
+}
 
-export default function ResourceSkillsForm() {
+export default function ResourceSkillsForm({ onComplete }: ResourceSkillsFormProps) {
     const [activeTab, setActiveTab] = useState("resource-info")
 
     const form = useForm<ResourceSkillsFormValues>({
@@ -64,10 +67,19 @@ export default function ResourceSkillsForm() {
             title: "Resource skills saved",
             description: `${data.resourceName}'s skills have been successfully saved.`,
         })
+
+        // Call onComplete callback if provided
+        if (onComplete) {
+            onComplete()
+        }
     }
 
     // Modify the nextTab function to validate the current tab before proceeding
-    const nextTab = async () => {
+    const nextTab = async (e: React.MouseEvent) => {
+        // Prevent default behavior and stop propagation
+        e.preventDefault()
+        e.stopPropagation()
+
         // Trigger validation for the current tab
         let isValid = false
 
@@ -103,7 +115,11 @@ export default function ResourceSkillsForm() {
         }
     }
 
-    const prevTab = () => {
+    const prevTab = (e: React.MouseEvent) => {
+        // Prevent default behavior and stop propagation
+        e.preventDefault()
+        e.stopPropagation()
+
         if (activeTab === "summary") setActiveTab("functional-skills")
         else if (activeTab === "functional-skills") setActiveTab("technology-skills")
         else if (activeTab === "technology-skills") setActiveTab("core-skills")
@@ -111,142 +127,155 @@ export default function ResourceSkillsForm() {
     }
 
     return (
-        <Card className="w-full max-w-4xl mx-auto">
-            <CardHeader>
-                <CardTitle>Resource Skills Entry Form</CardTitle>
-                <CardDescription>
-                    Enter resource information and skill levels from 0 (no skill) to 5 (advanced).
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <Tabs
-                            value={activeTab}
-                            onValueChange={async (value) => {
-                                // Allow going back to previous tabs without validation
-                                if (
-                                    (activeTab === "core-skills" && value === "resource-info") ||
-                                    (activeTab === "technology-skills" && (value === "resource-info" || value === "core-skills")) ||
-                                    (activeTab === "functional-skills" &&
-                                        (value === "resource-info" || value === "core-skills" || value === "technology-skills")) ||
-                                    (activeTab === "summary" &&
-                                        (value === "resource-info" ||
-                                            value === "core-skills" ||
-                                            value === "technology-skills" ||
-                                            value === "functional-skills"))
-                                ) {
-                                    setActiveTab(value)
-                                    return
-                                }
-
-                                // Validate current tab before allowing forward navigation
-                                let isValid = false
-
-                                if (
-                                    activeTab === "resource-info" &&
-                                    (value === "core-skills" ||
+        <div className="w-full">
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.stopPropagation() // Stop propagation on form submit
+                        form.handleSubmit(onSubmit)(e)
+                    }}
+                    className="space-y-6"
+                >
+                    <Tabs
+                        value={activeTab}
+                        onValueChange={async (value) => {
+                            // Allow going back to previous tabs without validation
+                            if (
+                                (activeTab === "core-skills" && value === "resource-info") ||
+                                (activeTab === "technology-skills" && (value === "resource-info" || value === "core-skills")) ||
+                                (activeTab === "functional-skills" &&
+                                    (value === "resource-info" || value === "core-skills" || value === "technology-skills")) ||
+                                (activeTab === "summary" &&
+                                    (value === "resource-info" ||
+                                        value === "core-skills" ||
                                         value === "technology-skills" ||
-                                        value === "functional-skills" ||
-                                        value === "summary")
-                                ) {
-                                    const resourceInfoResult = await form.trigger(["resourceId", "resourceName"])
-                                    isValid = resourceInfoResult
-                                } else if (
-                                    activeTab === "core-skills" &&
-                                    (value === "technology-skills" || value === "functional-skills" || value === "summary")
-                                ) {
-                                    const coreSkillsResult = await form.trigger(["coreSkills"])
-                                    isValid = coreSkillsResult
-                                } else {
-                                    // Technology and functional skills don't have required fields
-                                    isValid = true
-                                }
+                                        value === "functional-skills"))
+                            ) {
+                                setActiveTab(value)
+                                return
+                            }
 
-                                if (isValid) {
-                                    setActiveTab(value)
-                                } else {
-                                    toast({
-                                        title: "Validation Error",
-                                        description: "Please fill in all required fields before proceeding.",
-                                        variant: "destructive",
-                                    })
-                                }
-                            }}
-                            className="w-full"
+                            // Validate current tab before allowing forward navigation
+                            let isValid = false
+
+                            if (
+                                activeTab === "resource-info" &&
+                                (value === "core-skills" ||
+                                    value === "technology-skills" ||
+                                    value === "functional-skills" ||
+                                    value === "summary")
+                            ) {
+                                const resourceInfoResult = await form.trigger(["resourceId", "resourceName"])
+                                isValid = resourceInfoResult
+                            } else if (
+                                activeTab === "core-skills" &&
+                                (value === "technology-skills" || value === "functional-skills" || value === "summary")
+                            ) {
+                                const coreSkillsResult = await form.trigger(["coreSkills"])
+                                isValid = coreSkillsResult
+                            } else {
+                                // Technology and functional skills don't have required fields
+                                isValid = true
+                            }
+
+                            if (isValid) {
+                                setActiveTab(value)
+                            } else {
+                                toast({
+                                    title: "Validation Error",
+                                    description: "Please fill in all required fields before proceeding.",
+                                    variant: "destructive",
+                                })
+                            }
+                        }}
+                        className="w-full"
+                    >
+                        <TabsList className="grid grid-cols-5 w-full">
+                            <TabsTrigger value="resource-info" className="relative flex items-center gap-2">
+                                <UserCircle className="h-4 w-4" />
+                                <span>Resource</span>
+                                {form.formState.errors.resourceId || form.formState.errors.resourceName ? (
+                                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-destructive transform translate-x-1 -translate-y-1"></span>
+                                ) : null}
+                            </TabsTrigger>
+                            <TabsTrigger value="core-skills" className="relative flex items-center gap-2">
+                                <Zap className="h-4 w-4" />
+                                <span>Core</span>
+                                {form.formState.errors.coreSkills?.applicationFailover ? (
+                                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-destructive transform translate-x-1 -translate-y-1"></span>
+                                ) : null}
+                            </TabsTrigger>
+                            <TabsTrigger value="technology-skills" className="flex items-center gap-2">
+                                <Code className="h-4 w-4" />
+                                <span>Tech</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="functional-skills" className="flex items-center gap-2">
+                                <Briefcase className="h-4 w-4" />
+                                <span>Function</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="summary" className="flex items-center gap-2">
+                                <ClipboardList className="h-4 w-4" />
+                                <span>Summary</span>
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="resource-info" className="pt-4">
+                            <ResourceInfoForm form={form} />
+                        </TabsContent>
+
+                        <TabsContent value="core-skills" className="pt-4">
+                            <CoreSkillsForm form={form} />
+                        </TabsContent>
+
+                        <TabsContent value="technology-skills" className="pt-4">
+                            <TechnologySkillsForm form={form} />
+                        </TabsContent>
+
+                        <TabsContent value="functional-skills" className="pt-4">
+                            <FunctionalSkillsForm form={form} />
+                        </TabsContent>
+
+                        <TabsContent value="summary" className="pt-4">
+                            <SkillsSummary form={form} />
+                        </TabsContent>
+                    </Tabs>
+
+                    <div className="flex justify-between pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={prevTab}
+                            disabled={activeTab === "resource-info"}
+                            className="relative z-10" // Ensure button is above other elements
                         >
-                            <TabsList className="grid grid-cols-5 w-full">
-                                <TabsTrigger value="resource-info" className="relative flex items-center gap-2">
-                                    <UserCircle className="h-4 w-4" />
-                                    <span>Resource</span>
-                                    {form.formState.errors.resourceId || form.formState.errors.resourceName ? (
-                                        <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-destructive transform translate-x-1 -translate-y-1"></span>
-                                    ) : null}
-                                </TabsTrigger>
-                                <TabsTrigger value="core-skills" className="relative flex items-center gap-2">
-                                    <Zap className="h-4 w-4" />
-                                    <span>Core</span>
-                                    {form.formState.errors.coreSkills?.applicationFailover ? (
-                                        <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-destructive transform translate-x-1 -translate-y-1"></span>
-                                    ) : null}
-                                </TabsTrigger>
-                                <TabsTrigger value="technology-skills" className="flex items-center gap-2">
-                                    <Code className="h-4 w-4" />
-                                    <span>Tech</span>
-                                </TabsTrigger>
-                                <TabsTrigger value="functional-skills" className="flex items-center gap-2">
-                                    <Briefcase className="h-4 w-4" />
-                                    <span>Function</span>
-                                </TabsTrigger>
-                                <TabsTrigger value="summary" className="flex items-center gap-2">
-                                    <ClipboardList className="h-4 w-4" />
-                                    <span>Summary</span>
-                                </TabsTrigger>
-                            </TabsList>
+                            <ChevronLeft className="mr-2 h-4 w-4" />
+                            Previous
+                        </Button>
 
-                            <TabsContent value="resource-info" className="pt-4">
-                                <ResourceInfoForm form={form} />
-                            </TabsContent>
-
-                            <TabsContent value="core-skills" className="pt-4">
-                                <CoreSkillsForm form={form} />
-                            </TabsContent>
-
-                            <TabsContent value="technology-skills" className="pt-4">
-                                <TechnologySkillsForm form={form} />
-                            </TabsContent>
-
-                            <TabsContent value="functional-skills" className="pt-4">
-                                <FunctionalSkillsForm form={form} />
-                            </TabsContent>
-
-                            <TabsContent value="summary" className="pt-4">
-                                <SkillsSummary form={form} />
-                            </TabsContent>
-                        </Tabs>
-
-                        <div className="flex justify-between pt-4">
-                            <Button type="button" variant="outline" onClick={prevTab} disabled={activeTab === "resource-info"}>
-                                <ChevronLeft className="mr-2 h-4 w-4" />
-                                Previous
+                        {activeTab !== "summary" ? (
+                            <Button
+                                type="button"
+                                onClick={nextTab}
+                                className="relative z-10" // Ensure button is above other elements
+                            >
+                                Next
+                                <ChevronRight className="ml-2 h-4 w-4" />
                             </Button>
-
-                            {activeTab !== "summary" ? (
-                                <Button type="button" onClick={nextTab}>
-                                    Next
-                                    <ChevronRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            ) : (
-                                <Button type="submit">
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Resource Skills
-                                </Button>
-                            )}
-                        </div>
-                    </form>
-                </Form>
-            </CardContent>
-        </Card>
+                        ) : (
+                            <Button
+                                type="submit"
+                                className="relative z-10" // Ensure button is above other elements
+                                onClick={(e) => {
+                                    e.stopPropagation() // Stop propagation on submit button click
+                                }}
+                            >
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Resource Skills
+                            </Button>
+                        )}
+                    </div>
+                </form>
+            </Form>
+        </div>
     )
 }
-
