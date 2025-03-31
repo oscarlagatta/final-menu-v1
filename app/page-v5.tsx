@@ -1,6 +1,6 @@
 
 import type { Metadata } from "next"
-import {RGIDataTable} from "@/components/dashboard/rgi-data-table";
+import {RGIDataTable} from "@/components/dashboard/components/data-table/rgi-data-table";
 
 export const metadata: Metadata = {
     title: "RGI Dashboard",

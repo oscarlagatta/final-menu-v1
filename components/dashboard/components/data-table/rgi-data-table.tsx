@@ -24,10 +24,10 @@ import { Badge } from "@/components/ui/badge"
 
 import { Card, CardContent } from "@/components/ui/card"
 import {rgiData} from "@/components/dashboard/data/rgi-data";
-import {DataTableFacetedFilter} from "@/components/dashboard/data-table-faceted-filter";
-import {DataTableViewOptions} from "@/components/dashboard/data-table-view-options";
-import {DataTablePagination} from "@/components/dashboard/data-table-pagination";
-import {DataTableColumnHeader} from "@/components/dashboard/data-table-column-header";
+import {DataTableFacetedFilter} from "@/components/dashboard/components/data-table/data-table-faceted-filter";
+import {DataTableViewOptions} from "@/components/dashboard/components/data-table/data-table-view-options";
+import {DataTablePagination} from "@/components/dashboard/components/data-table/data-table-pagination";
+import {DataTableColumnHeader} from "@/components/dashboard/components/data-table/data-table-column-header";
 import {RGIData} from "@/components/dashboard/types/rgi";
 
 
