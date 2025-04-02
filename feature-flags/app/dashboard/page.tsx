@@ -199,36 +199,34 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.from({ length: 5 }).map(
-                          (_, i) =>
-                            (
-                              <tr key={i} className="bg-white dark:bg-length: 5}).map((_, i) => (
-                        <tr key={i} className="bg-white dark:bg-gray-800 border-t">\
-                          <td className="p-2 font-medium">PRJ-{1000 + i}</td>
-                          <td className="p-2">Enhanced Project {i + 1}</td>
-                          <td className="p-2">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              i % 2 === 0 
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
-                                : "bg-muted/50 text-muted-foreground"
-                            }`}>
-                              {i % 2 === 0 ? "Active" : "Completed"}
-                            </span>
-                          </td>
-                          <td className="p-2">{i % 3 === 0 ? "Marketing" : i % 3 === 1 ? "Development" : "Design"}</td>
-                          <td className="p-2">
-                            <div className="w-full bg-muted rounded-full h-2.5 dark:bg-gray-700">
-                              <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${(i + 1) * 20}%` }}></div>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{(i + 1) * 20}%</span>
-                          </td>
-                          <td className="p-2 text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </td>
-                        </tr>
-                            ),
-                        )}
+                      {Array.from({ length: 5 }).map((_, i) => (
+                          <tr key={i} className="bg-white dark:bg-gray-800 border-t">
+                            <td className="p-2 font-medium">PRJ-{1000 + i}</td>
+                            <td className="p-2">Enhanced Project {i + 1}</td>
+                            <td className="p-2">
+      <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              i % 2 === 0
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  : "bg-muted/50 text-muted-foreground"
+          }`}
+      >
+        {i % 2 === 0 ? "Active" : "Completed"}
+      </span>
+                            </td>
+                            <td className="p-2">{i % 3 === 0 ? "Marketing" : i % 3 === 1 ? "Development" : "Design"}</td>
+                            <td className="p-2">
+                              <div className="w-full bg-muted rounded-full h-2.5 dark:bg-gray-700">
+                                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${(i + 1) * 20}%` }}></div>
+                              </div>
+                              <span className="text-xs text-muted-foreground">{(i + 1) * 20}%</span>
+                            </td>
+                            <td className="p-2 text-right">
+                              <Button variant="ghost" size="sm">View</Button>
+                              <Button variant="ghost" size="sm">Edit</Button>
+                            </td>
+                          </tr>
+                      ))}
                       </tbody>
                     </table>
                   </div>
