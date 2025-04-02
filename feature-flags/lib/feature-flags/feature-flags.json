@@ -1,0 +1,123 @@
+{
+  "advanced-analytics": {
+    "id": "advanced-analytics",
+    "name": "Advanced Analytics",
+    "description": "Enable advanced analytics features in the dashboard",
+    "enabled": false,
+    "type": "feature",
+    "category": "Analytics"
+  },
+  "experimental-ui": {
+    "id": "experimental-ui",
+    "name": "Experimental UI",
+    "description": "Enable experimental UI components and layouts",
+    "enabled": false,
+    "type": "feature",
+    "category": "UI"
+  },
+  "route-settings": {
+    "id": "route-settings",
+    "name": "Settings Page",
+    "description": "Allow access to the settings page",
+    "enabled": true,
+    "type": "route",
+    "category": "Routes"
+  },
+  "component-data-grid": {
+    "id": "component-data-grid",
+    "name": "Data Grid Component",
+    "description": "Enable the advanced data grid component",
+    "enabled": false,
+    "type": "component",
+    "category": "Components"
+  },
+  "dark-mode": {
+    "id": "dark-mode",
+    "name": "Dark Mode",
+    "description": "Enable dark mode theme across the application",
+    "enabled": true,
+    "type": "feature",
+    "category": "UI"
+  },
+  "beta-search": {
+    "id": "beta-search",
+    "name": "Beta Search",
+    "description": "Enable the new search experience with advanced filters",
+    "enabled": false,
+    "type": "feature",
+    "category": "Search"
+  },
+  "route-admin": {
+    "id": "route-admin",
+    "name": "Admin Dashboard",
+    "description": "Allow access to the admin dashboard",
+    "enabled": false,
+    "type": "route",
+    "category": "Routes"
+  },
+  "component-chart": {
+    "id": "component-chart",
+    "name": "Interactive Charts",
+    "description": "Enable interactive chart components with drill-down capabilities",
+    "enabled": true,
+    "type": "component",
+    "category": "Components"
+  },
+  "api-v2": {
+    "id": "api-v2",
+    "name": "API v2 Endpoints",
+    "description": "Use the new v2 API endpoints for improved performance",
+    "enabled": false,
+    "type": "feature",
+    "category": "API"
+  },
+  "premium-features": {
+    "id": "premium-features",
+    "name": "Premium Features",
+    "description": "Enable premium features for paid accounts",
+    "enabled": false,
+    "type": "feature",
+    "category": "Monetization"
+  },
+  "component-rich-text-editor": {
+    "id": "component-rich-text-editor",
+    "name": "Rich Text Editor",
+    "description": "Enable the advanced rich text editor with formatting options",
+    "enabled": true,
+    "type": "component",
+    "category": "Components"
+  },
+  "route-reports": {
+    "id": "route-reports",
+    "name": "Reports Page",
+    "description": "Allow access to the reports page",
+    "enabled": true,
+    "type": "route",
+    "category": "Routes"
+  },
+  "notifications": {
+    "id": "notifications",
+    "name": "In-app Notifications",
+    "description": "Enable real-time notifications within the application",
+    "enabled": true,
+    "type": "feature",
+    "category": "Communication"
+  },
+  "export-data": {
+    "id": "export-data",
+    "name": "Data Export",
+    "description": "Enable data export functionality in CSV and Excel formats",
+    "enabled": false,
+    "type": "feature",
+    "category": "Data"
+  },
+  "component-calendar": {
+    "id": "component-calendar",
+    "name": "Interactive Calendar",
+    "description": "Enable the interactive calendar component with drag-and-drop",
+    "enabled": false,
+    "type": "component",
+    "category": "Components"
+  }
+}
+
