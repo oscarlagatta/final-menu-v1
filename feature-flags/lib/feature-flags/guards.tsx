@@ -22,18 +22,21 @@ export const Feature = ({ featureId, children, fallback = null }: FeatureProps) 
 }
 
 // A higher-order component that only renders the wrapped component if the feature is enabled
-export function withFeatureFlag<T>(Component: React.ComponentType<T>, featureId: string) {
+export function withFeatureFlag<T extends React.JSX.IntrinsicAttributes>(
+    Component: React.ComponentType<T>,
+    featureId: string
+) {
   return function FeatureFlaggedComponent(props: T) {
-    const { isFeatureEnabled } = useFeatureFlags()
+    const { isFeatureEnabled } = useFeatureFlags();
 
     if (!isFeatureEnabled(featureId)) {
-      return null
+      return null;
     }
 
-    return <Component {...props} />
-  }
+    // Spread the props properly
+    return <Component {...props} />;
+  };
 }
-
 // A component that only renders its children if the route is enabled
 export const ProtectedRoute = ({ featureId, children, fallback = null }: FeatureProps) => {
   const { isFeatureEnabled } = useFeatureFlags()
