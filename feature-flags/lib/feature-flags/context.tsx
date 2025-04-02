@@ -12,7 +12,13 @@ const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(und
 // Update the FeatureFlagProvider component to include the addFlag function
 export const FeatureFlagProvider = ({ children, initialFlags }: FeatureFlagProviderProps) => {
   const [flags, setFlags] = useState<FeatureFlag[]>(
-    initialFlags || Object.values(defaultFlagsData).map((flag) => ({ ...flag })),
+      initialFlags ||
+      Object.values(defaultFlagsData).map((flag) => {
+        if (!["feature", "route", "component"].includes(flag.type)) {
+          throw new Error(`Invalid flag type: ${flag.type}`)
+        }
+        return { ...flag } as FeatureFlag
+      }),
   )
   const [isManagementVisible, setIsManagementVisible] = useState(false)
 
