@@ -99,7 +99,7 @@ const MetricsGrid = () => {
             { month: firstMetric.secondMonth, result: "secondMonth_Result" },
             { month: firstMetric.thirdMonth, result: "thirdMonth_Result" },
             { month: firstMetric.fourthMonth, result: "fourthMonth_Result" },
-            { month: firstMetric.fivehMonth, result: "fiveMonth_Result" },
+            { month: firstMetric.fiveMonth, result: "fiveMonth_Result" },
             { month: firstMetric.sixthMonth, result: "sixthMonth_Result" },
         ]
     }, [sixMonthByMetricPerformance])
@@ -183,7 +183,7 @@ const MetricsGrid = () => {
 
                     const content = (
                         <div
-                            style={{ display: "flex", alignment: "center" }}
+                            style={{ display: "flex", alignItems: "center" }}
                             onMouseEnter={() => setHoveredMetricId(params.data?.metricId ?? null)}
                             onMouseLeave={() => setHoveredMetricId(null)}
                         >
