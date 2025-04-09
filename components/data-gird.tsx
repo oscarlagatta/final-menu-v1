@@ -29,7 +29,17 @@ const LoadingSpinner = () => (
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
 )
+const Spinner = () => (
+    <div className="relative w-5 h-5">
+        {/* Outer circle with gradient */}
+        <div className="absolute inset-0 rounded-full border-2 border-t-transparent border-r-green-500 border-b-amber-500 border-l-red-500 animate-spin"></div>
 
+        {/* Inner circle representing a gauge/meter */}
+        <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
+            <div className="w-1 h-1 bg-gray-700 rounded-full"></div>
+        </div>
+    </div>
+)
 const MetricsGrid = () => {
     const [expandedMetrics, setExpandedMetrics] = useState<number[]>([])
     const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null)
