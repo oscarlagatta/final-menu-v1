@@ -1,12 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useState, useMemo } from "react"
+import { useCallback, useEffect, useState, useMemo, useRef } from "react"
 
-import type { ColDef, GetRowIdParams, ICellRendererParams, RowClickedEvent } from "ag-grid-community"
+import type { ColDef, GetRowIdParams, ICellRendererParams } from "ag-grid-community"
 import { AgGridReact } from "ag-grid-react"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
-import { FetchingProgress } from "@bofa/scorecard-ui"
+import { FetchingProgress, LoadingSpinner } from "@bofa/scorecard-ui"
 import {
     type CellColorParams,
     type GridRowData,
@@ -24,72 +24,113 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 
 const MetricsGrid = () => {
+    // Store the base parent rows separately from the full grid data
+    const [parentRows, setParentRows] = useState<ExtendedGridRowData[]>([])
     const [expandedMetrics, setExpandedMetrics] = useState<number[]>([])
-    const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null)
     const [gridData, setGridData] = useState<ExtendedGridRowData[]>([])
     const [hoveredMetricId, setHoveredMetricId] = useState<number | null>(null)
+    const [sltDataByMetric, setSltDataByMetric] = useState<{ [metricId: number]: SltMetricPerformance | null }>({})
+    const [loadingSltMetrics, setLoadingSltMetrics] = useState<Set<number>>(new Set())
+
+    // Use a ref to track metrics that are currently loading their children
+    const loadingMetrics = useRef<Set<number>>(new Set())
 
     const { sixMonthByMetricPerformance, useGetSltMetricPerformance, sixMonthByMetricPerformanceQuery } =
         useDashboardData()
     const { useGetMetric } = useMetricsData()
-    const { data: sltMetricPerformance, isLoading: isSltDataLoading } = useGetSltMetricPerformance(
-        selectedMetricId ?? 0,
-    ) as {
-        data: SltMetricPerformance | null
-        isLoading: boolean
-    }
+
+    // Custom hook to fetch SLT data for a specific metric
+    // const fetchSltData = (metricId: number) => {
+    //     const { data, isLoading } = useGetSltMetricPerformance(metricId) as {
+    //         data: SltMetricPerformance | null
+    //         isLoading: boolean
+    //     }
+    //     return { data, isLoading }
+    // }
+
     const { data: hoveredMetricData, isLoading: isMetricDataLoading } = useGetMetric(hoveredMetricId ?? 0)
 
-    // Initialize grid data with sixMonthByMetricPerformance
+    // Initialize parent rows from sixMonthByMetricPerformance
     useEffect(() => {
         if (sixMonthByMetricPerformance) {
             const baseData = sixMonthByMetricPerformance.map((metric) => ({
                 ...metric,
                 isParent: true,
             }))
+            setParentRows(baseData)
             setGridData(baseData)
         }
     }, [sixMonthByMetricPerformance])
 
-    // Update grid data when SLT performance data is loaded
+    // Fetch SLT data for expanded metrics
     useEffect(() => {
-        if (sltMetricPerformance && Array.isArray(sltMetricPerformance) && selectedMetricId) {
-            // First, create a clean base grid without any children of the current selectedMetricId
-            const baseGrid = gridData.filter((row) => !(row.metricId === selectedMetricId && !row.isParent))
+        const fetchSltData = async () => {
+            if (!expandedMetrics.length) return
 
-            // Create the child rows for the selected metric
-            const childRows = sltMetricPerformance.map((slt) => ({
-                ...slt,
-                metricId: selectedMetricId,
-                isParent: false,
-                sltName: slt.sltName,
-                sltNBId: slt.sltNBId,
-                firstMonth_Result: slt.firstMonth_Result,
-                secondMonth_Result: slt.secondMonth_Result,
-                thirdMonth_Result: slt.thirdMonth_Result,
-                fourthMonth_Result: slt.fourthMonth_Result,
-                fiveMonth_Result: slt.fiveMonth_Result,
-                sixthMonth_Result: slt.sixthMonth_Result,
-                firstMonth_Color: slt.firstMonth_Color,
-                secondMonth_Color: slt.secondMonth_Color,
-                thirdMonth_Color: slt.thirdMonth_Color,
-                fourthMonth_Color: slt.fourthMonth_Color,
-                fiveMonth_Color: slt.fiveMonth_Color,
-                sixthMonth_Color: slt.sixthMonth_Color,
-            }))
+            const newSltData: { [metricId: number]: SltMetricPerformance | null } = {}
+            const loading = new Set<number>()
 
-            // Find the index of the parent row
-            const parentIndex = baseGrid.findIndex((row) => row.metricId === selectedMetricId && row.isParent)
+            for (const metricId of expandedMetrics) {
+                loading.add(metricId)
+                const { data } = useGetSltMetricPerformance(metricId) as { data: SltMetricPerformance | null }
+                newSltData[metricId] = data
+            }
 
-            if (parentIndex !== -1) {
-                // Insert child rows after the parent
-                const newGridData = [...baseGrid.slice(0, parentIndex + 1), ...childRows, ...baseGrid.slice(parentIndex + 1)]
+            setSltDataByMetric(newSltData)
+            setLoadingSltMetrics(loading)
+        }
 
-                setGridData(newGridData)
-                setExpandedMetrics((prev) => (prev.includes(selectedMetricId) ? prev : [...prev, selectedMetricId]))
+        fetchSltData()
+    }, [expandedMetrics, useGetSltMetricPerformance])
+
+    // Function to rebuild the entire grid data based on parent rows and expanded metrics
+    const rebuildGridData = useCallback(async () => {
+        let newGridData: ExtendedGridRowData[] = [...parentRows]
+
+        // For each expanded metric, fetch and insert its children
+        for (const metricId of expandedMetrics) {
+            // const { data: sltData } = fetchSltData(metricId)
+            const sltData = sltDataByMetric[metricId]
+
+            if (sltData && Array.isArray(sltData)) {
+                // Find the index of the parent row
+                const parentIndex = newGridData.findIndex((row) => row.metricId === metricId && row.isParent)
+
+                if (parentIndex !== -1) {
+                    // Create child rows
+                    const childRows = sltData.map((slt) => ({
+                        ...slt,
+                        metricId,
+                        isParent: false,
+                        sltName: slt.sltName,
+                        sltNBId: slt.sltNBId,
+                        firstMonth_Result: slt.firstMonth_Result,
+                        secondMonth_Result: slt.secondMonth_Result,
+                        thirdMonth_Result: slt.thirdMonth_Result,
+                        fourthMonth_Result: slt.fourthMonth_Result,
+                        fiveMonth_Result: slt.fiveMonth_Result,
+                        sixthMonth_Result: slt.sixthMonth_Result,
+                        firstMonth_Color: slt.firstMonth_Color,
+                        secondMonth_Color: slt.secondMonth_Color,
+                        thirdMonth_Color: slt.thirdMonth_Color,
+                        fourthMonth_Color: slt.fourthMonth_Color,
+                        fiveMonth_Color: slt.fiveMonth_Color,
+                        sixthMonth_Color: slt.sixthMonth_Color,
+                    }))
+
+                    // Insert child rows after the parent
+                    newGridData = [...newGridData.slice(0, parentIndex + 1), ...childRows, ...newGridData.slice(parentIndex + 1)]
+                }
             }
         }
-    }, [sltMetricPerformance, selectedMetricId, gridData])
+
+        setGridData(newGridData)
+    }, [parentRows, expandedMetrics, sltDataByMetric])
+
+    // Rebuild grid data whenever expanded metrics change
+    useEffect(() => {
+        rebuildGridData()
+    }, [expandedMetrics, rebuildGridData])
 
     const monthColumns = useMemo(() => {
         if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) return []
@@ -104,18 +145,26 @@ const MetricsGrid = () => {
         ]
     }, [sixMonthByMetricPerformance])
 
-    const handleRowClicked = useCallback(
-        (event: RowClickedEvent<GridRowData>) => {
-            if (event.data?.isParent && event.data?.metricId) {
-                const metricId = event.data.metricId
-                if (expandedMetrics.includes(metricId)) {
-                    // Collapse: Remove child rows and update expandedMetrics
-                    setExpandedMetrics((prev) => prev.filter((id) => id !== metricId))
-                    setGridData((prev) => prev.filter((row) => !(row.metricId === metricId && !row.isParent)))
-                } else {
-                    // Expand: Set selectedMetricId to trigger the useEffect that loads child data
-                    setSelectedMetricId(metricId)
-                }
+    // Handle expanding/collapsing a row
+    const handleToggleRow = useCallback(
+        (metricId: number) => {
+            // If this metric is already loading, ignore the click
+            if (loadingMetrics.current.has(metricId)) {
+                return
+            }
+
+            if (expandedMetrics.includes(metricId)) {
+                // Collapse: simply remove from expanded metrics
+                setExpandedMetrics((prev) => prev.filter((id) => id !== metricId))
+            } else {
+                // Expand: add to expanded metrics and mark as loading
+                loadingMetrics.current.add(metricId)
+                setExpandedMetrics((prev) => [...prev, metricId])
+
+                // Remove from loading after a short delay
+                setTimeout(() => {
+                    loadingMetrics.current.delete(metricId)
+                }, 500)
             }
         },
         [expandedMetrics],
@@ -151,10 +200,6 @@ const MetricsGrid = () => {
                         return isParent ? metricPerformanceColors.parent.bad : metricPerformanceColors.child.bad
                     case "green":
                         return isParent ? metricPerformanceColors.parent.good : metricPerformanceColors.child.good
-                    // case 'amber':
-                    //   return isParent
-                    //     ? metricPerformanceColors.parent.warning
-                    //     : metricPerformanceColors.child.warning;
                     case "amber":
                         return isParent ? metricPerformanceColors.parent.warning : metricPerformanceColors.child.warning
                     case "grey":
@@ -178,8 +223,9 @@ const MetricsGrid = () => {
                     if (!params.data) return null
 
                     const isParent = params.data.isParent
-                    const isExpanded = isParent && expandedMetrics.includes(params.data.metricId)
-                    const isLoading = isParent && isSltDataLoading && selectedMetricId === params.data.metricId
+                    const metricId = params.data.metricId
+                    const isExpanded = isParent && expandedMetrics.includes(metricId)
+                    const isLoading = isParent && loadingMetrics.current.has(metricId)
 
                     const content = (
                         <div
@@ -187,26 +233,23 @@ const MetricsGrid = () => {
                             onMouseEnter={() => setHoveredMetricId(params.data?.metricId ?? null)}
                             onMouseLeave={() => setHoveredMetricId(null)}
                         >
-                            {isParent &&
-                                (isLoading ? (
-                                    <LoadingSpinner />
-                                ) : (
-                                    <span
-                                        style={{ cursor: "pointer", marginRight: "5px" }}
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleRowClicked({
-                                                data: params.data,
-                                            } as RowClickedEvent<GridRowData>)
-                                        }}
-                                    >
-                    {isExpanded ? (
-                        <ChevronDown size={16} data-testid="chevron-down" aria-hidden="true" />
-                    ) : (
-                        <ChevronRight size={16} data-testid="chevron-right" aria-hidden="true" />
-                    )}
-                  </span>
-                                ))}
+                            {isParent && (
+                                <span
+                                    style={{ cursor: "pointer", marginRight: "5px" }}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleToggleRow(metricId)
+                                    }}
+                                >
+                  {isLoading ? (
+                      <LoadingSpinner />
+                  ) : isExpanded ? (
+                      <ChevronDown size={16} data-testid="chevron-down" aria-hidden="true" />
+                  ) : (
+                      <ChevronRight size={16} data-testid="chevron-right" aria-hidden="true" />
+                  )}
+                </span>
+                            )}
                             {isParent ? params.value : <div style={{ paddingLeft: "24px" }}>{params.data.sltName}</div>}
                         </div>
                     )
@@ -263,7 +306,7 @@ const MetricsGrid = () => {
             },
             {
                 headerName: "Source",
-                filed: "source",
+                field: "source",
                 flex: 1,
                 filter: "agTextColumnFilter",
                 cellRenderer: (params: ICellRendererParams<GridRowData>) => {
@@ -326,12 +369,11 @@ const MetricsGrid = () => {
         [
             monthColumns,
             expandedMetrics,
-            isSltDataLoading,
-            selectedMetricId,
             hoveredMetricData,
             isMetricDataLoading,
             hoveredMetricId,
-            handleRowClicked,
+            handleToggleRow,
+            sltDataByMetric,
         ],
     )
 
@@ -341,12 +383,27 @@ const MetricsGrid = () => {
         resizable: true,
     }
 
-    // For debugging purposes
-    const logGridState = () => {
-        console.log("Current grid data:", gridData)
-        console.log("Expanded metrics:", expandedMetrics)
-        console.log("Selected metric ID:", selectedMetricId)
-    }
+    // Fetch SLT data for all metrics on component mount
+    useEffect(() => {
+        if (sixMonthByMetricPerformance) {
+            const allMetricIds = sixMonthByMetricPerformance.map((metric) => metric.metricId)
+            const newSltData: { [metricId: number]: SltMetricPerformance | null } = {}
+            const loading = new Set<number>()
+
+            const fetchAllSltData = async () => {
+                for (const metricId of allMetricIds) {
+                    loading.add(metricId)
+                    const { data } = useGetSltMetricPerformance(metricId) as { data: SltMetricPerformance | null }
+                    newSltData[metricId] = data
+                }
+
+                setSltDataByMetric(newSltData)
+                setLoadingSltMetrics(loading)
+            }
+
+            fetchAllSltData()
+        }
+    }, [sixMonthByMetricPerformance, useGetSltMetricPerformance])
 
     if (!sixMonthByMetricPerformance || sixMonthByMetricPerformanceQuery.isLoading) {
         return (
@@ -364,7 +421,6 @@ const MetricsGrid = () => {
                 defaultColDef={defaultColDef}
                 getRowId={getRowId}
                 suppressRowTransform={true}
-                onRowClicked={handleRowClicked}
             />
         </div>
     )
