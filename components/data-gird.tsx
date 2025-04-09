@@ -1,12 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useState, useMemo, useRef } from "react"
+import { useCallback, useEffect, useState, useMemo } from "react"
 
 import type { ColDef, GetRowIdParams, ICellRendererParams } from "ag-grid-community"
 import { AgGridReact } from "ag-grid-react"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
-import { FetchingProgress, LoadingSpinner } from "@bofa/scorecard-ui"
+import { FetchingProgress } from "@bofa/scorecard-ui"
 import {
     type CellColorParams,
     type GridRowData,
@@ -23,84 +23,61 @@ import type { ExtendedGridRowData } from "./types"
 import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 
+const LoadingSpinner = () => (
+    <svg className="animate-spin h-5 w-5 text-gray-500" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+)
+
 const MetricsGrid = () => {
-    // Store the base parent rows separately from the full grid data
-    const [parentRows, setParentRows] = useState<ExtendedGridRowData[]>([])
     const [expandedMetrics, setExpandedMetrics] = useState<number[]>([])
+    const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null)
     const [gridData, setGridData] = useState<ExtendedGridRowData[]>([])
     const [hoveredMetricId, setHoveredMetricId] = useState<number | null>(null)
-    const [sltDataByMetric, setSltDataByMetric] = useState<{ [metricId: number]: SltMetricPerformance | null }>({})
-    const [loadingSltMetrics, setLoadingSltMetrics] = useState<Set<number>>(new Set())
-
-    // Use a ref to track metrics that are currently loading their children
-    const loadingMetrics = useRef<Set<number>>(new Set())
+    const [pendingAction, setPendingAction] = useState<{ type: "expand" | "collapse"; metricId: number } | null>(null)
 
     const { sixMonthByMetricPerformance, useGetSltMetricPerformance, sixMonthByMetricPerformanceQuery } =
         useDashboardData()
     const { useGetMetric } = useMetricsData()
 
-    // Custom hook to fetch SLT data for a specific metric
-    // const fetchSltData = (metricId: number) => {
-    //     const { data, isLoading } = useGetSltMetricPerformance(metricId) as {
-    //         data: SltMetricPerformance | null
-    //         isLoading: boolean
-    //     }
-    //     return { data, isLoading }
-    // }
+    // This hook is called at the top level, which is correct
+    const { data: sltMetricPerformance, isLoading: isSltDataLoading } = useGetSltMetricPerformance(
+        selectedMetricId ?? 0,
+    ) as {
+        data: SltMetricPerformance | null
+        isLoading: boolean
+    }
 
     const { data: hoveredMetricData, isLoading: isMetricDataLoading } = useGetMetric(hoveredMetricId ?? 0)
 
-    // Initialize parent rows from sixMonthByMetricPerformance
+    // Initialize grid data with sixMonthByMetricPerformance
     useEffect(() => {
         if (sixMonthByMetricPerformance) {
             const baseData = sixMonthByMetricPerformance.map((metric) => ({
                 ...metric,
                 isParent: true,
             }))
-            setParentRows(baseData)
             setGridData(baseData)
         }
     }, [sixMonthByMetricPerformance])
 
-    // Fetch SLT data for expanded metrics
+    // Process SLT data when it's loaded
     useEffect(() => {
-        const fetchSltData = async () => {
-            if (!expandedMetrics.length) return
+        if (sltMetricPerformance && Array.isArray(sltMetricPerformance) && selectedMetricId && !isSltDataLoading) {
+            // Only process if we have a pending expand action
+            if (pendingAction?.type === "expand" && pendingAction.metricId === selectedMetricId) {
+                // Create a new grid data array without modifying the existing one
+                const baseGrid = [...gridData]
 
-            const newSltData: { [metricId: number]: SltMetricPerformance | null } = {}
-            const loading = new Set<number>()
-
-            for (const metricId of expandedMetrics) {
-                loading.add(metricId)
-                const { data } = useGetSltMetricPerformance(metricId) as { data: SltMetricPerformance | null }
-                newSltData[metricId] = data
-            }
-
-            setSltDataByMetric(newSltData)
-            setLoadingSltMetrics(loading)
-        }
-
-        fetchSltData()
-    }, [expandedMetrics, useGetSltMetricPerformance])
-
-    // Function to rebuild the entire grid data based on parent rows and expanded metrics
-    const rebuildGridData = useCallback(async () => {
-        let newGridData: ExtendedGridRowData[] = [...parentRows]
-
-        // For each expanded metric, fetch and insert its children
-        for (const metricId of expandedMetrics) {
-            // const { data: sltData } = fetchSltData(metricId)
-            const sltData = sltDataByMetric[metricId]
-
-            if (sltData && Array.isArray(sltData)) {
-                // Find the index of the parent row
-                const parentIndex = newGridData.findIndex((row) => row.metricId === metricId && row.isParent)
+                // Find the parent row index
+                const parentIndex = baseGrid.findIndex((row) => row.metricId === selectedMetricId && row.isParent)
 
                 if (parentIndex !== -1) {
                     // Create child rows
-                    const childRows = sltData.map((slt) => ({
+                    const childRows = sltMetricPerformance.map((slt) => ({
                         ...slt,
-                        metricId,
+                        metricId: selectedMetricId,
                         isParent: false,
                         sltName: slt.sltName,
                         sltNBId: slt.sltNBId,
@@ -119,18 +96,37 @@ const MetricsGrid = () => {
                     }))
 
                     // Insert child rows after the parent
-                    newGridData = [...newGridData.slice(0, parentIndex + 1), ...childRows, ...newGridData.slice(parentIndex + 1)]
+                    const newGridData = [...baseGrid.slice(0, parentIndex + 1), ...childRows, ...baseGrid.slice(parentIndex + 1)]
+
+                    setGridData(newGridData)
+
+                    // Add to expanded metrics
+                    if (!expandedMetrics.includes(selectedMetricId)) {
+                        setExpandedMetrics((prev) => [...prev, selectedMetricId])
+                    }
                 }
+
+                // Clear the pending action
+                setPendingAction(null)
             }
         }
+    }, [sltMetricPerformance, selectedMetricId, isSltDataLoading, pendingAction, gridData, expandedMetrics])
 
-        setGridData(newGridData)
-    }, [parentRows, expandedMetrics, sltDataByMetric])
-
-    // Rebuild grid data whenever expanded metrics change
+    // Process collapse action
     useEffect(() => {
-        rebuildGridData()
-    }, [expandedMetrics, rebuildGridData])
+        if (pendingAction?.type === "collapse") {
+            const metricId = pendingAction.metricId
+
+            // Remove child rows
+            setGridData((prev) => prev.filter((row) => !(row.metricId === metricId && !row.isParent)))
+
+            // Remove from expanded metrics
+            setExpandedMetrics((prev) => prev.filter((id) => id !== metricId))
+
+            // Clear the pending action
+            setPendingAction(null)
+        }
+    }, [pendingAction])
 
     const monthColumns = useMemo(() => {
         if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) return []
@@ -145,29 +141,21 @@ const MetricsGrid = () => {
         ]
     }, [sixMonthByMetricPerformance])
 
-    // Handle expanding/collapsing a row
     const handleToggleRow = useCallback(
         (metricId: number) => {
-            // If this metric is already loading, ignore the click
-            if (loadingMetrics.current.has(metricId)) {
-                return
-            }
+            // If there's already a pending action, ignore this click
+            if (pendingAction !== null) return
 
             if (expandedMetrics.includes(metricId)) {
-                // Collapse: simply remove from expanded metrics
-                setExpandedMetrics((prev) => prev.filter((id) => id !== metricId))
+                // Collapse: Set a pending collapse action
+                setPendingAction({ type: "collapse", metricId })
             } else {
-                // Expand: add to expanded metrics and mark as loading
-                loadingMetrics.current.add(metricId)
-                setExpandedMetrics((prev) => [...prev, metricId])
-
-                // Remove from loading after a short delay
-                setTimeout(() => {
-                    loadingMetrics.current.delete(metricId)
-                }, 500)
+                // Expand: Set the selected metric ID and a pending expand action
+                setSelectedMetricId(metricId)
+                setPendingAction({ type: "expand", metricId })
             }
         },
-        [expandedMetrics],
+        [expandedMetrics, pendingAction],
     )
 
     const getRowId = (params: GetRowIdParams) => {
@@ -225,7 +213,10 @@ const MetricsGrid = () => {
                     const isParent = params.data.isParent
                     const metricId = params.data.metricId
                     const isExpanded = isParent && expandedMetrics.includes(metricId)
-                    const isLoading = isParent && loadingMetrics.current.has(metricId)
+                    const isLoading =
+                        isParent &&
+                        ((pendingAction?.type === "expand" && pendingAction.metricId === metricId) ||
+                            (isSltDataLoading && selectedMetricId === metricId))
 
                     const content = (
                         <div
@@ -369,11 +360,13 @@ const MetricsGrid = () => {
         [
             monthColumns,
             expandedMetrics,
+            isSltDataLoading,
+            selectedMetricId,
             hoveredMetricData,
             isMetricDataLoading,
             hoveredMetricId,
             handleToggleRow,
-            sltDataByMetric,
+            pendingAction,
         ],
     )
 
@@ -382,28 +375,6 @@ const MetricsGrid = () => {
         filter: true,
         resizable: true,
     }
-
-    // Fetch SLT data for all metrics on component mount
-    useEffect(() => {
-        if (sixMonthByMetricPerformance) {
-            const allMetricIds = sixMonthByMetricPerformance.map((metric) => metric.metricId)
-            const newSltData: { [metricId: number]: SltMetricPerformance | null } = {}
-            const loading = new Set<number>()
-
-            const fetchAllSltData = async () => {
-                for (const metricId of allMetricIds) {
-                    loading.add(metricId)
-                    const { data } = useGetSltMetricPerformance(metricId) as { data: SltMetricPerformance | null }
-                    newSltData[metricId] = data
-                }
-
-                setSltDataByMetric(newSltData)
-                setLoadingSltMetrics(loading)
-            }
-
-            fetchAllSltData()
-        }
-    }, [sixMonthByMetricPerformance, useGetSltMetricPerformance])
 
     if (!sixMonthByMetricPerformance || sixMonthByMetricPerformanceQuery.isLoading) {
         return (
