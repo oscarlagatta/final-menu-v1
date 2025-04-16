@@ -10,6 +10,19 @@ import { useDashboardData } from "@/lib/hooks/use-dashboard-data"
 import { useMetricsData } from "@/lib/hooks/use-metrics-data"
 import { FetchingProgress } from "@/components/ui/fetching-progress"
 
+
+export function FetchingProgress() {
+    return (
+        <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center w-10 h-10 animate-spin">
+                <div className="w-6 h-6 border-3 border-t-transparent border-gray-600 rounded-full" />
+            </div>
+            <p className="mt-3 text-gray-600">Loading metrics data...</p>
+        </div>
+    )
+}
+
+
 // Define types for our data structures
 type MetricDataPoint = {
     month: string
