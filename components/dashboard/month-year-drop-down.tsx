@@ -5,17 +5,17 @@ import dayjs from "dayjs"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
 
 export function MonthYearDropDown({ onDateChange }: { onDateChange?: (date: dayjs.Dayjs) => void }) {
-    const [date, setDate] = useState<dayjs.Dayjs>(dayjs())
+    const [date, setDate] = useState<Date>(new Date())
 
-    // Handle date selection with proper type conversion
+    // Handle date selection
     const handleSelect = (selectedDate: Date | undefined) => {
         if (selectedDate) {
-            const newDate = dayjs(selectedDate)
-            setDate(newDate)
+            setDate(selectedDate)
             if (onDateChange) {
-                onDateChange(newDate)
+                onDateChange(dayjs(selectedDate))
             }
         }
     }
@@ -25,15 +25,15 @@ export function MonthYearDropDown({ onDateChange }: { onDateChange?: (date: dayj
             <Popover>
                 <PopoverTrigger asChild>
                     <Button variant={"outline"} className="w-[200px] justify-start text-left font-normal">
-                        {date ? date.format("MMMM YYYY") : <span>Pick a month and year</span>}
+                        {date ? format(date, "MMMM yyyy") : <span>Pick a month and year</span>}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                         initialFocus
                         mode="single"
-                        defaultMonth={date.toDate()}
-                        selected={date.toDate()}
+                        defaultMonth={date}
+                        selected={date}
                         onSelect={handleSelect}
                         className="rounded-md border shadow-md"
                     />
