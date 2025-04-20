@@ -20,15 +20,29 @@ type LeaderPerformanceProps = {
 
 export default function LeaderPerformance({ selectedMonth }: LeaderPerformanceProps) {
     // Use the dashboard data hooks to get the main metrics data
-    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
+    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery, useGetSltMetricPerformance } =
+        useDashboardData()
+
+    // Call useGetSltMetricPerformance for each metric ID (up to 5 metrics)
+    // We need to call these at the top level to follow React's rules of hooks
+    const metric1Query = useGetSltMetricPerformance(1)
+    const metric2Query = useGetSltMetricPerformance(2)
+    const metric3Query = useGetSltMetricPerformance(3)
+    const metric4Query = useGetSltMetricPerformance(4)
+    const metric5Query = useGetSltMetricPerformance(5)
 
     // Process data for the chart
     const { leaderData, totals, isLoading, maxCount } = useMemo(() => {
-        if (
+        // Check if any of the queries are still loading
+        const queriesLoading =
             sixMonthByMetricPerformanceQuery.isLoading ||
-            !sixMonthByMetricPerformance ||
-            sixMonthByMetricPerformance.length === 0
-        ) {
+            metric1Query.isLoading ||
+            metric2Query.isLoading ||
+            metric3Query.isLoading ||
+            metric4Query.isLoading ||
+            metric5Query.isLoading
+
+        if (queriesLoading || !sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
             return {
                 leaderData: [],
                 totals: { green: 0, amber: 0, red: 0, grey: 0 },
@@ -62,70 +76,63 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             "sixMonth_Color",
         ][monthIndex]
 
-        // Create a set of leader names (in a real app, these would come from the SLT data)
-        // For this simulation, we'll create leaders based on the metrics themselves
-        const leaders = [
-            "John Wilson",
-            "Sarah Brown",
-            "William Smith",
-            "Emma Rodriguez",
-            "Michael Johnson",
-            "Lisa Davis",
-            "David Miller",
-            "Robert Garcia",
-            "Jane Williams",
-            "Olivia Jones",
+        // Combine all SLT data from the queries
+        const allSltData = [
+            ...(metric1Query.data || []),
+            ...(metric2Query.data || []),
+            ...(metric3Query.data || []),
+            ...(metric4Query.data || []),
+            ...(metric5Query.data || []),
         ]
 
-        // Initialize leader map
+        // Extract unique leader names from the SLT data
+        const leaderNames = new Set<string>()
+        allSltData.forEach((record) => {
+            if (record.sltName) {
+                leaderNames.add(record.sltName)
+            }
+        })
+
+        // Initialize leader map with the extracted names
         const leaderMap = new Map<string, { green: number; amber: number; red: number; grey: number }>()
-        leaders.forEach((leader) => {
-            leaderMap.set(leader, { green: 0, amber: 0, red: 0, grey: 0 })
+        leaderNames.forEach((name) => {
+            leaderMap.set(name, { green: 0, amber: 0, red: 0, grey: 0 })
         })
 
         // Track totals for the top-level summary
         const totals = { green: 0, amber: 0, red: 0, grey: 0 }
 
-        // Distribute metrics among leaders
-        sixMonthByMetricPerformance.forEach((metric, index) => {
-            // Assign each metric to 1-3 random leaders
-            const numLeaders = Math.floor(Math.random() * 3) + 1
-            const assignedLeaders = new Set<string>()
-
-            while (assignedLeaders.size < numLeaders) {
-                const leaderIndex = Math.floor(Math.random() * leaders.length)
-                assignedLeaders.add(leaders[leaderIndex])
-            }
+        // Count metrics by status for each leader
+        allSltData.forEach((record) => {
+            if (!record.sltName) return
 
             // Get the color for the selected month
-            const colorKey = colorField as keyof typeof metric
-            const color = metric[colorKey] as string
+            const colorKey = colorField as keyof typeof record
+            const color = record[colorKey] as string
 
-            // Increment counters for each assigned leader
-            assignedLeaders.forEach((leaderName) => {
-                const leaderCounts = leaderMap.get(leaderName)!
+            // Get current counts for this leader
+            const leaderCounts = leaderMap.get(record.sltName)!
 
-                // Increment the appropriate counter based on color (case-insensitive)
-                if (!color) {
+            // Increment the appropriate counter based on color (case-insensitive)
+            if (!color) {
+                leaderCounts.grey++
+                totals.grey++
+            } else {
+                const colorLower = color.toLowerCase()
+                if (colorLower === "green") {
+                    leaderCounts.green++
+                    totals.green++
+                } else if (colorLower === "amber") {
+                    leaderCounts.amber++
+                    totals.amber++
+                } else if (colorLower === "red") {
+                    leaderCounts.red++
+                    totals.red++
+                } else {
                     leaderCounts.grey++
                     totals.grey++
-                } else {
-                    const colorLower = color.toLowerCase()
-                    if (colorLower === "green") {
-                        leaderCounts.green++
-                        totals.green++
-                    } else if (colorLower === "amber") {
-                        leaderCounts.amber++
-                        totals.amber++
-                    } else if (colorLower === "red") {
-                        leaderCounts.red++
-                        totals.red++
-                    } else {
-                        leaderCounts.grey++
-                        totals.grey++
-                    }
                 }
-            })
+            }
         })
 
         // Convert map to array for rendering
@@ -152,7 +159,21 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             isLoading: false,
             maxCount,
         }
-    }, [sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery.isLoading, selectedMonth])
+    }, [
+        sixMonthByMetricPerformance,
+        sixMonthByMetricPerformanceQuery.isLoading,
+        metric1Query.data,
+        metric1Query.isLoading,
+        metric2Query.data,
+        metric2Query.isLoading,
+        metric3Query.data,
+        metric3Query.isLoading,
+        metric4Query.data,
+        metric4Query.isLoading,
+        metric5Query.data,
+        metric5Query.isLoading,
+        selectedMonth,
+    ])
 
     if (isLoading) {
         return (
