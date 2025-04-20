@@ -1,10 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useDashboardData } from "@/lib/hooks/use-dashboard-data"
 import { FetchingProgress } from "@/components/ui/fetching-progress"
-import { detailRecordsByMetricId } from "@/data/metrics-data" // Import the data directly
 
 // Type for leader performance data
 type LeaderPerformanceData = {
@@ -19,21 +18,78 @@ type LeaderPerformanceProps = {
     selectedMonth: string // Format: "YYYY-MM"
 }
 
+// Custom hook to fetch SLT data for all metrics
+function useSltDataForAllMetrics(metricIds: number[], useGetSltMetricPerformance: any) {
+    const [allSltData, setAllSltData] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    const fetchData = useCallback(async () => {
+        if (!metricIds || metricIds.length === 0) {
+            setAllSltData([])
+            setIsLoading(false)
+            return
+        }
+
+        setIsLoading(true)
+
+        try {
+            const results = await Promise.all(
+                metricIds.map(async (metricId) => {
+                    const result = await useGetSltMetricPerformance(metricId)
+                    return result
+                }),
+            )
+
+            const flattenedData = results.reduce((acc, result) => {
+                if (result && result.data) {
+                    return [...acc, ...(Array.isArray(result.data) ? result.data : [result.data])]
+                }
+                return acc
+            }, [] as any[])
+
+            setAllSltData(flattenedData)
+            setIsLoading(false)
+        } catch (error) {
+            console.error("Error fetching SLT data:", error)
+            setIsLoading(false)
+        }
+    }, [metricIds, useGetSltMetricPerformance])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
+
+    return { allSltData, isLoading }
+}
+
 export default function LeaderPerformance({ selectedMonth }: LeaderPerformanceProps) {
     // Use the dashboard data hooks to get the main metrics data
-    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
+    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery, useGetSltMetricPerformance } =
+        useDashboardData()
+
+    // Get metric IDs from the main metrics data
+    const metricIds = useMemo(() => {
+        if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
+            return []
+        }
+        return sixMonthByMetricPerformance.map((metric) => metric.metricId)
+    }, [sixMonthByMetricPerformance])
+
+    // Use our custom hook to get SLT data for all metrics
+    const { allSltData, isLoading: sltDataLoading } = useSltDataForAllMetrics(metricIds, useGetSltMetricPerformance)
 
     // Process data for the chart
-    const { leaderData, totals, isLoading, maxCount } = useMemo(() => {
+    const { leaderData, totals, maxCount } = useMemo(() => {
         if (
             sixMonthByMetricPerformanceQuery.isLoading ||
+            sltDataLoading ||
             !sixMonthByMetricPerformance ||
-            sixMonthByMetricPerformance.length === 0
+            sixMonthByMetricPerformance.length === 0 ||
+            allSltData.length === 0
         ) {
             return {
                 leaderData: [],
                 totals: { green: 0, amber: 0, red: 0, grey: 0 },
-                isLoading: true,
                 maxCount: 10,
             }
         }
@@ -62,9 +118,6 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             "fiveMonth_Color",
             "sixMonth_Color",
         ][monthIndex]
-
-        // Extract all SLT data from detailRecordsByMetricId
-        const allSltData = Object.values(detailRecordsByMetricId).flat()
 
         // Extract unique leader names from the SLT data
         const leaderNames = new Set<string>()
@@ -137,10 +190,18 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
         return {
             leaderData,
             totals,
-            isLoading: false,
             maxCount,
         }
-    }, [sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery.isLoading, selectedMonth])
+    }, [
+        sixMonthByMetricPerformance,
+        sixMonthByMetricPerformanceQuery.isLoading,
+        allSltData,
+        sltDataLoading,
+        selectedMonth,
+    ])
+
+    // Determine overall loading state
+    const isLoading = sixMonthByMetricPerformanceQuery.isLoading || sltDataLoading
 
     if (isLoading) {
         return (
