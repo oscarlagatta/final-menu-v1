@@ -26,6 +26,17 @@ type ChartDataPoint = {
     color?: string
 }
 
+// Helper function to determine color based on percentage and trigger/limit
+const determineColor = (resultString: string | null, trigger: number, limit: number) => {
+    if (!resultString) return "Grey"
+
+    const percentage = Number.parseFloat(resultString.split("-")[0])
+
+    if (percentage >= trigger) return "Green"
+    if (percentage >= limit) return "Amber"
+    return "Red"
+}
+
 export default function Dashboard() {
     // State for selected month/year
     const [selectedDate, setSelectedDate] = useState(dayjs())
@@ -38,6 +49,11 @@ export default function Dashboard() {
     // Use the same hooks that MetricsGrid is using
     const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
     const { useGetMetric } = useMetricsData()
+
+    // Handle date change from MonthYearDropDown
+    const handleDateChange = (newDate: dayjs.Dayjs) => {
+        setSelectedDate(newDate)
+    }
 
     // Calculate all derived data using useMemo to ensure they're only recalculated when dependencies change
     const { totalMetrics, greenMetrics, amberMetrics, redMetrics, performanceRate, momChange, metricsWithColors } =
@@ -314,7 +330,7 @@ export default function Dashboard() {
             {/* Month/Year Dropdown and Leader Performance */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                    <MonthYearDropDown />
+                    <MonthYearDropDown onDateChange={handleDateChange} />
                     <LeaderPerformance selectedMonth={selectedMonthYear} />
                 </div>
 
