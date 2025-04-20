@@ -6,8 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-export function MonthYearDropDown() {
+export function MonthYearDropDown({ onDateChange }: { onDateChange?: (date: dayjs.Dayjs) => void }) {
     const [date, setDate] = useState<dayjs.Dayjs>(dayjs())
+
+    // Handle date selection with proper type conversion
+    const handleSelect = (selectedDate: Date | undefined) => {
+        if (selectedDate) {
+            const newDate = dayjs(selectedDate)
+            setDate(newDate)
+            if (onDateChange) {
+                onDateChange(newDate)
+            }
+        }
+    }
 
     return (
         <div className="flex items-center justify-center p-4">
@@ -20,10 +31,10 @@ export function MonthYearDropDown() {
                 <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                         initialFocus
-                        mode="month"
-                        defaultMonth={date}
-                        selected={date}
-                        onSelect={setDate}
+                        mode="single"
+                        defaultMonth={date.toDate()}
+                        selected={date.toDate()}
+                        onSelect={handleSelect}
                         className="rounded-md border shadow-md"
                     />
                 </PopoverContent>
