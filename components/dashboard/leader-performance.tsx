@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useDashboardData } from "@/lib/hooks/use-dashboard-data"
 import { FetchingProgress } from "@/components/ui/fetching-progress"
+import { detailRecordsByMetricId } from "@/data/metrics-data"
 
 // Type for leader performance data
 type LeaderPerformanceData = {
@@ -20,69 +21,37 @@ type LeaderPerformanceProps = {
 
 export default function LeaderPerformance({ selectedMonth }: LeaderPerformanceProps) {
     // Use the dashboard data hooks
-    const { sixMonthByMetricPerformance, useGetSltMetricPerformance } = useDashboardData()
-
-    // State to store all SLT data
-    const [allSltData, setAllSltData] = useState<any[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-
-    // State to store fetched data for each metric
-    const [metricData, setMetricData] = useState<any[]>([])
-
-    // Fetch SLT data for all metrics using useEffect
-    useEffect(() => {
-        if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
-            setIsLoading(false)
-            return
-        }
-
-        setIsLoading(true)
-        const fetchData = async () => {
-            const data = await Promise.all(
-                sixMonthByMetricPerformance.map((metric) =>
-                    useGetSltMetricPerformance(metric.metricId)
-                        .then((result) => result.data || [])
-                        .catch((error) => {
-                            console.error(`Error fetching data for metric ${metric.metricId}:`, error)
-                            return [] // Return an empty array in case of error
-                        }),
-                ),
-            )
-            setMetricData(data)
-            setIsLoading(false)
-        }
-
-        fetchData()
-    }, [sixMonthByMetricPerformance, useGetSltMetricPerformance])
-
-    // Flatten the metricData into allSltData
-    useEffect(() => {
-        const flattenedData = metricData.reduce((acc, curr) => acc.concat(curr), [])
-        setAllSltData(flattenedData)
-    }, [metricData])
+    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
 
     // Process data for the chart
-    const { leaderData, totals } = useMemo(() => {
-        if (isLoading || allSltData.length === 0) {
-            return { leaderData: [], totals: { green: 0, amber: 0, red: 0, grey: 0 } }
+    const { leaderData, totals, isLoading, maxCount } = useMemo(() => {
+        if (
+            sixMonthByMetricPerformanceQuery.isLoading ||
+            !sixMonthByMetricPerformance ||
+            sixMonthByMetricPerformance.length === 0
+        ) {
+            return {
+                leaderData: [],
+                totals: { green: 0, amber: 0, red: 0, grey: 0 },
+                isLoading: true,
+                maxCount: 10,
+            }
         }
 
         // Find the month index that matches the selected month
         let monthIndex = 0
-        if (allSltData.length > 0) {
-            const firstRecord = allSltData[0]
-            const months = [
-                firstRecord.firstMonth,
-                firstRecord.secondMonth,
-                firstRecord.thirdMonth,
-                firstRecord.fourthMonth,
-                firstRecord.fiveMonth,
-                firstRecord.sixMonth,
-            ]
+        const firstMetric = sixMonthByMetricPerformance[0]
+        const months = [
+            firstMetric.firstMonth,
+            firstMetric.secondMonth,
+            firstMetric.thirdMonth,
+            firstMetric.fourthMonth,
+            firstMetric.fiveMonth,
+            firstMetric.sixMonth,
+        ]
 
-            monthIndex = months.findIndex((month) => month === selectedMonth)
-            if (monthIndex === -1) monthIndex = 0 // Default to first month if not found
-        }
+        monthIndex = months.findIndex((month) => month === selectedMonth)
+        if (monthIndex === -1) monthIndex = 0 // Default to first month if not found
 
         // Map month index to color field
         const colorField = [
@@ -94,48 +63,61 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             "sixMonth_Color",
         ][monthIndex]
 
-        // Group metrics by leader (using sltName as leader name)
+        // Extract leader data from the detail records in the mock data
+        // In a real implementation, we would use the useGetSltMetricPerformance hook for each metric
+        const allLeaders = new Set<string>()
+
+        // First pass: collect all unique leader names
+        Object.values(detailRecordsByMetricId).forEach((records) => {
+            records.forEach((record) => {
+                if (record.sltName) {
+                    allLeaders.add(record.sltName)
+                }
+            })
+        })
+
+        // Initialize leader map with all leaders
         const leaderMap = new Map<string, { green: number; amber: number; red: number; grey: number }>()
+        allLeaders.forEach((leader) => {
+            leaderMap.set(leader, { green: 0, amber: 0, red: 0, grey: 0 })
+        })
 
         // Track totals for the top-level summary
         const totals = { green: 0, amber: 0, red: 0, grey: 0 }
 
-        allSltData.forEach((record) => {
-            // Use sltName as leader name
-            const leaderName = record.sltName || "Unassigned"
+        // Second pass: count metrics by status for each leader
+        Object.values(detailRecordsByMetricId).forEach((records) => {
+            records.forEach((record) => {
+                if (!record.sltName) return
 
-            // Get the color for the selected month
-            const colorKey = colorField as keyof typeof record
-            const color = record[colorKey] as string
+                // Get the color for the selected month
+                const colorKey = colorField as keyof typeof record
+                const color = record[colorKey] as string
 
-            // Initialize leader data if not exists
-            if (!leaderMap.has(leaderName)) {
-                leaderMap.set(leaderName, { green: 0, amber: 0, red: 0, grey: 0 })
-            }
+                // Get current counts for this leader
+                const leaderCounts = leaderMap.get(record.sltName)!
 
-            // Get current counts for this leader
-            const leaderCounts = leaderMap.get(leaderName)!
-
-            // Increment the appropriate counter based on color (case-insensitive)
-            if (!color) {
-                leaderCounts.grey++
-                totals.grey++
-            } else {
-                const colorLower = color.toLowerCase()
-                if (colorLower === "green") {
-                    leaderCounts.green++
-                    totals.green++
-                } else if (colorLower === "amber") {
-                    leaderCounts.amber++
-                    totals.amber++
-                } else if (colorLower === "red") {
-                    leaderCounts.red++
-                    totals.red++
-                } else {
+                // Increment the appropriate counter based on color (case-insensitive)
+                if (!color) {
                     leaderCounts.grey++
                     totals.grey++
+                } else {
+                    const colorLower = color.toLowerCase()
+                    if (colorLower === "green") {
+                        leaderCounts.green++
+                        totals.green++
+                    } else if (colorLower === "amber") {
+                        leaderCounts.amber++
+                        totals.amber++
+                    } else if (colorLower === "red") {
+                        leaderCounts.red++
+                        totals.red++
+                    } else {
+                        leaderCounts.grey++
+                        totals.grey++
+                    }
                 }
-            }
+            })
         })
 
         // Convert map to array for rendering
@@ -147,15 +129,19 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
         // Sort leaders by name
         leaderData.sort((a, b) => a.name.localeCompare(b.name))
 
-        return { leaderData, totals }
-    }, [allSltData, selectedMonth, isLoading])
+        // Calculate the maximum count for bar width scaling
+        const maxCount = Math.max(
+            10, // Minimum value to avoid division by zero
+            ...leaderData.map((leader) => leader.green + leader.amber + leader.red + leader.grey),
+        )
 
-    // Calculate the maximum count for bar width scaling
-    const maxCount = useMemo(() => {
-        if (leaderData.length === 0) return 10
-
-        return Math.max(...leaderData.map((leader) => leader.green + leader.amber + leader.red + leader.grey))
-    }, [leaderData])
+        return {
+            leaderData,
+            totals,
+            isLoading: false,
+            maxCount,
+        }
+    }, [sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery.isLoading, selectedMonth])
 
     if (isLoading) {
         return (
