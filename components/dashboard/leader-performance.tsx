@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useDashboardData } from "@/lib/hooks/use-dashboard-data"
+import { FetchingProgress } from "@/components/ui/fetching-progress"
 
 // Type for leader performance data
 type LeaderPerformanceData = {
@@ -18,29 +19,70 @@ type LeaderPerformanceProps = {
 }
 
 export default function LeaderPerformance({ selectedMonth }: LeaderPerformanceProps) {
-    // Use the same hooks that MetricsGrid is using
-    const { sixMonthByMetricPerformance } = useDashboardData()
+    // Use the dashboard data hooks
+    const { sixMonthByMetricPerformance, useGetSltMetricPerformance } = useDashboardData()
+
+    // State to store all SLT data
+    const [allSltData, setAllSltData] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    // State to store fetched data for each metric
+    const [metricData, setMetricData] = useState<any[]>([])
+
+    // Fetch SLT data for all metrics using useEffect
+    useEffect(() => {
+        if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
+            setIsLoading(false)
+            return
+        }
+
+        setIsLoading(true)
+        const fetchData = async () => {
+            const data = await Promise.all(
+                sixMonthByMetricPerformance.map((metric) =>
+                    useGetSltMetricPerformance(metric.metricId)
+                        .then((result) => result.data || [])
+                        .catch((error) => {
+                            console.error(`Error fetching data for metric ${metric.metricId}:`, error)
+                            return [] // Return an empty array in case of error
+                        }),
+                ),
+            )
+            setMetricData(data)
+            setIsLoading(false)
+        }
+
+        fetchData()
+    }, [sixMonthByMetricPerformance, useGetSltMetricPerformance])
+
+    // Flatten the metricData into allSltData
+    useEffect(() => {
+        const flattenedData = metricData.reduce((acc, curr) => acc.concat(curr), [])
+        setAllSltData(flattenedData)
+    }, [metricData])
 
     // Process data for the chart
     const { leaderData, totals } = useMemo(() => {
-        if (!sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
+        if (isLoading || allSltData.length === 0) {
             return { leaderData: [], totals: { green: 0, amber: 0, red: 0, grey: 0 } }
         }
 
         // Find the month index that matches the selected month
         let monthIndex = 0
-        const firstMetric = sixMonthByMetricPerformance[0]
-        const months = [
-            firstMetric.firstMonth,
-            firstMetric.secondMonth,
-            firstMetric.thirdMonth,
-            firstMetric.fourthMonth,
-            firstMetric.fiveMonth,
-            firstMetric.sixMonth,
-        ]
+        if (allSltData.length > 0) {
+            const firstRecord = allSltData[0]
+            const months = [
+                firstRecord.firstMonth,
+                firstRecord.secondMonth,
+                firstRecord.thirdMonth,
+                firstRecord.fourthMonth,
+                firstRecord.fiveMonth,
+                firstRecord.sixMonth,
+            ]
 
-        monthIndex = months.findIndex((month) => month === selectedMonth)
-        if (monthIndex === -1) monthIndex = 0 // Default to first month if not found
+            monthIndex = months.findIndex((month) => month === selectedMonth)
+            if (monthIndex === -1) monthIndex = 0 // Default to first month if not found
+        }
 
         // Map month index to color field
         const colorField = [
@@ -52,20 +94,19 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             "sixMonth_Color",
         ][monthIndex]
 
-        // Group metrics by leader (using serviceAlignment as leader name)
-        // This is a simplification - you may need to adjust based on your actual data structure
+        // Group metrics by leader (using sltName as leader name)
         const leaderMap = new Map<string, { green: number; amber: number; red: number; grey: number }>()
 
         // Track totals for the top-level summary
         const totals = { green: 0, amber: 0, red: 0, grey: 0 }
 
-        sixMonthByMetricPerformance.forEach((metric) => {
-            // Use serviceAlignment as leader name, or "Unassigned" if null
-            const leaderName = metric.serviceAlignment || "Unassigned"
+        allSltData.forEach((record) => {
+            // Use sltName as leader name
+            const leaderName = record.sltName || "Unassigned"
 
             // Get the color for the selected month
-            const colorKey = colorField as keyof typeof metric
-            const color = metric[colorKey] as string
+            const colorKey = colorField as keyof typeof record
+            const color = record[colorKey] as string
 
             // Initialize leader data if not exists
             if (!leaderMap.has(leaderName)) {
@@ -107,7 +148,7 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
         leaderData.sort((a, b) => a.name.localeCompare(b.name))
 
         return { leaderData, totals }
-    }, [sixMonthByMetricPerformance, selectedMonth])
+    }, [allSltData, selectedMonth, isLoading])
 
     // Calculate the maximum count for bar width scaling
     const maxCount = useMemo(() => {
@@ -115,6 +156,19 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
 
         return Math.max(...leaderData.map((leader) => leader.green + leader.amber + leader.red + leader.grey))
     }, [leaderData])
+
+    if (isLoading) {
+        return (
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-bold">Leader Performance</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[400px] flex items-center justify-center">
+                    <FetchingProgress />
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card>
@@ -154,7 +208,7 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
                 </div>
 
                 {/* Individual Leader Performance */}
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto">
                     {leaderData.map((leader) => (
                         <div key={leader.name} className="mb-4">
                             <div className="font-medium mb-1">{leader.name}</div>
