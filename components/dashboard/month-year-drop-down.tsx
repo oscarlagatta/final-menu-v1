@@ -3,42 +3,51 @@
 import { useState } from "react"
 import dayjs from "dayjs"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { ChevronDown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export function MonthYearDropDown({ onDateChange }: { onDateChange?: (date: dayjs.Dayjs) => void }) {
-    const [date, setDate] = useState<Date>(new Date())
+    const [selectedDate, setSelectedDate] = useState(dayjs())
+
+    const generateMonthOptions = () => {
+        const options = []
+
+        for (let i = 0; i <= 5; i++) {
+            const date = dayjs().subtract(i, "month")
+            options.push(date)
+        }
+        return options
+    }
 
     // Handle date selection
-    const handleSelect = (selectedDate: Date | undefined) => {
-        if (selectedDate) {
-            setDate(selectedDate)
-            if (onDateChange) {
-                onDateChange(dayjs(selectedDate))
-            }
+    const handleDateSelect = (date: dayjs.Dayjs) => {
+        setSelectedDate(date)
+        if (onDateChange) {
+            onDateChange(date)
         }
     }
 
     return (
-        <div className="flex items-center justify-center p-4">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant={"outline"} className="w-[200px] justify-start text-left font-normal">
-                        {date ? format(date, "MMMM yyyy") : <span>Pick a month and year</span>}
+        <div className="space-y-2">
+            <div className="text-md text-lg font-medium tracking-widest text-gray-500">SCORECARD PERFORMANCE</div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-[200px] justify-between">
+                        <div className="flex items-center">
+                            <div className="mr-2 h-2 w-2 rounded-full bg-green-500" />
+                            {selectedDate.format("MMMM YYYY")}
+                        </div>
+                        <ChevronDown className="ml-2 w-4 h-4" />
                     </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="single"
-                        defaultMonth={date}
-                        selected={date}
-                        onSelect={handleSelect}
-                        className="rounded-md border shadow-md"
-                    />
-                </PopoverContent>
-            </Popover>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[200px]">
+                    {generateMonthOptions().map((date) => (
+                        <DropdownMenuItem key={date.valueOf()} onSelect={() => handleDateSelect(date)}>
+                            {date.format("MMMM YYYY")}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     )
 }
