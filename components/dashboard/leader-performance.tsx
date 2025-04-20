@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useDashboardData } from "@/lib/hooks/use-dashboard-data"
 import { FetchingProgress } from "@/components/ui/fetching-progress"
+import { detailRecordsByMetricId } from "@/data/metrics-data" // Import the data directly
 
 // Type for leader performance data
 type LeaderPerformanceData = {
@@ -20,29 +21,15 @@ type LeaderPerformanceProps = {
 
 export default function LeaderPerformance({ selectedMonth }: LeaderPerformanceProps) {
     // Use the dashboard data hooks to get the main metrics data
-    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery, useGetSltMetricPerformance } =
-        useDashboardData()
-
-    // Call useGetSltMetricPerformance for each metric ID (up to 5 metrics)
-    // We need to call these at the top level to follow React's rules of hooks
-    const metric1Query = useGetSltMetricPerformance(1)
-    const metric2Query = useGetSltMetricPerformance(2)
-    const metric3Query = useGetSltMetricPerformance(3)
-    const metric4Query = useGetSltMetricPerformance(4)
-    const metric5Query = useGetSltMetricPerformance(5)
+    const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
 
     // Process data for the chart
     const { leaderData, totals, isLoading, maxCount } = useMemo(() => {
-        // Check if any of the queries are still loading
-        const queriesLoading =
+        if (
             sixMonthByMetricPerformanceQuery.isLoading ||
-            metric1Query.isLoading ||
-            metric2Query.isLoading ||
-            metric3Query.isLoading ||
-            metric4Query.isLoading ||
-            metric5Query.isLoading
-
-        if (queriesLoading || !sixMonthByMetricPerformance || sixMonthByMetricPerformance.length === 0) {
+            !sixMonthByMetricPerformance ||
+            sixMonthByMetricPerformance.length === 0
+        ) {
             return {
                 leaderData: [],
                 totals: { green: 0, amber: 0, red: 0, grey: 0 },
@@ -76,14 +63,8 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             "sixMonth_Color",
         ][monthIndex]
 
-        // Combine all SLT data from the queries
-        const allSltData = [
-            ...(metric1Query.data || []),
-            ...(metric2Query.data || []),
-            ...(metric3Query.data || []),
-            ...(metric4Query.data || []),
-            ...(metric5Query.data || []),
-        ]
+        // Extract all SLT data from detailRecordsByMetricId
+        const allSltData = Object.values(detailRecordsByMetricId).flat()
 
         // Extract unique leader names from the SLT data
         const leaderNames = new Set<string>()
@@ -159,21 +140,7 @@ export default function LeaderPerformance({ selectedMonth }: LeaderPerformancePr
             isLoading: false,
             maxCount,
         }
-    }, [
-        sixMonthByMetricPerformance,
-        sixMonthByMetricPerformanceQuery.isLoading,
-        metric1Query.data,
-        metric1Query.isLoading,
-        metric2Query.data,
-        metric2Query.isLoading,
-        metric3Query.data,
-        metric3Query.isLoading,
-        metric4Query.data,
-        metric4Query.isLoading,
-        metric5Query.data,
-        metric5Query.isLoading,
-        selectedMonth,
-    ])
+    }, [sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery.isLoading, selectedMonth])
 
     if (isLoading) {
         return (
