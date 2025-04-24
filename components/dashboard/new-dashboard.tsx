@@ -1,48 +1,26 @@
-"use client"
-
-import type { ReactNode } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface DashboardLayoutProps {
-  children?: ReactNode
-  dataGrid?: ReactNode
-  charts?: ReactNode[]
-  timeOptions?: string[]
-  userOptions?: string[]
-  onTimeChange?: (value: string) => void
-  onUserChange?: (value: string) => void
-}
+export default function DashboardPage() {
+  // Generate last 6 months in Month-Year format
+  const getLast6Months = () => {
+    const months = []
+    const currentDate = new Date()
 
-export function DashboardLayout({
-  children,
-  dataGrid,
-  charts = [],
-  timeOptions = [],
-  userOptions = [],
-  onTimeChange,
-  onUserChange,
-}: DashboardLayoutProps) {
-  // Generate last 6 months if no timeOptions provided
-  const defaultTimeOptions =
-    timeOptions.length > 0
-      ? timeOptions
-      : (() => {
-          const months = []
-          const currentDate = new Date()
+    for (let i = 0; i < 6; i++) {
+      const date = new Date(currentDate)
+      date.setMonth(currentDate.getMonth() - i)
+      const monthYear = date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+      months.push(monthYear)
+    }
 
-          for (let i = 0; i < 6; i++) {
-            const date = new Date(currentDate)
-            date.setMonth(currentDate.getMonth() - i)
-            const monthYear = date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-            months.push(monthYear)
-          }
+    return months
+  }
 
-          return months
-        })()
+  // Sample users for the dropdown
+  const users = ["All Users", "John Doe", "Jane Smith", "Robert Johnson", "Emily Davis", "Michael Wilson"]
 
-  // Default user options if none provided
-  const defaultUserOptions =
-    userOptions.length > 0 ? userOptions : ["All Users", "John Doe", "Jane Smith", "Robert Johnson", "Emily Davis"]
+  const months = getLast6Months()
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -52,14 +30,14 @@ export function DashboardLayout({
           <label htmlFor="month-select" className="block text-sm font-medium mb-2">
             Time Period
           </label>
-          <Select defaultValue={defaultTimeOptions[0]} onValueChange={onTimeChange}>
+          <Select defaultValue={months[0]}>
             <SelectTrigger id="month-select" className="w-full">
-              <SelectValue placeholder="Select time period" />
+              <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
-              {defaultTimeOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {months.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -70,14 +48,14 @@ export function DashboardLayout({
           <label htmlFor="user-select" className="block text-sm font-medium mb-2">
             User
           </label>
-          <Select defaultValue={defaultUserOptions[0]} onValueChange={onUserChange}>
+          <Select defaultValue={users[0]}>
             <SelectTrigger id="user-select" className="w-full">
               <SelectValue placeholder="Select user" />
             </SelectTrigger>
             <SelectContent>
-              {defaultUserOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {users.map((user) => (
+                <SelectItem key={user} value={user}>
+                  {user}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -85,27 +63,105 @@ export function DashboardLayout({
         </div>
       </div>
 
-      {children}
-
       {/* Data Grid Section */}
-      {dataGrid && (
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Data Overview</h2>
-          {dataGrid}
-        </section>
-      )}
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">Data Overview</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Grid</CardTitle>
+            <CardDescription>Your data grid will appear here</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+              <p className="text-muted-foreground">Data Grid Placeholder</p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Charts Section */}
-      {charts.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Analytics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {charts.map((chart, index) => (
-              <div key={index}>{chart}</div>
-            ))}
-          </div>
-        </section>
-      )}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Analytics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Chart 1 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 1</CardTitle>
+              <CardDescription>Description for chart 1</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart 2 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 2</CardTitle>
+              <CardDescription>Description for chart 2</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart 3 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 3</CardTitle>
+              <CardDescription>Description for chart 3</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart 4 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 4</CardTitle>
+              <CardDescription>Description for chart 4</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart 5 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 5</CardTitle>
+              <CardDescription>Description for chart 5</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart 6 */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Chart 6</CardTitle>
+              <CardDescription>Description for chart 6</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 w-full bg-muted/20 flex items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Chart Placeholder</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   )
 }
