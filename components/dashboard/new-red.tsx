@@ -14,6 +14,7 @@ export default function NonGreenMetrics({ selectedMonth }: NonGreenMetricProps) 
   // Use the same hooks that MetricsGrid is using
   const { sixMonthByMetricPerformance, sixMonthByMetricPerformanceQuery } = useDashboardData()
 
+  // Update the process data section to handle the type issue
   // Process data for the component
   const { nonGreenMetrics, isLoading } = useMemo(() => {
     if (
@@ -29,11 +30,12 @@ export default function NonGreenMetrics({ selectedMonth }: NonGreenMetricProps) 
 
     // Filter metrics that are not green (amber or red) in the selected month
     const nonGreenMetrics = sixMonthByMetricPerformance
-      .filter((metric) => {
-        const firstMonthColor = metric.firstMonth_Color?.toLowerCase()
+      .filter((metric: any) => {
+        // Use type assertion to access color properties
+        const firstMonthColor = (metric as any).firstMonth_Color?.toLowerCase()
         return firstMonthColor === "amber" || firstMonthColor === "red"
       })
-      .map((metric) => {
+      .map((metric: any) => {
         // Extract current and previous month values
         const currentValue = metric.firstMonth_Result ? Number.parseFloat(metric.firstMonth_Result.split("-")[0]) : 0
 
@@ -43,7 +45,7 @@ export default function NonGreenMetrics({ selectedMonth }: NonGreenMetricProps) 
         const change = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0
 
         // Get current month color
-        const color = metric.firstMonth_Color?.toLowerCase() || "grey"
+        const color = (metric as any).firstMonth_Color?.toLowerCase() || "grey"
 
         // Get current month result parts (percentage, numerator, denominator)
         const resultParts = metric.firstMonth_Result ? metric.firstMonth_Result.split("-") : ["0", "0", "0"]
