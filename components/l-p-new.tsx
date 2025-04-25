@@ -7,6 +7,18 @@ import { useMetricPerformanceData } from "@/lib/hooks/use-metrics"
 // First, import the Tooltip components at the top of the file
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+// First, update the interface definitions to include detailed metrics information
+
+// Add this interface for detailed metric information
+interface MetricDetail {
+  metricId: number
+  metricName: string
+  metricPrefix: string
+  currentValue: number
+  target: number
+  status: "Green" | "Amber" | "Red"
+}
+
 // Define types for the API response
 interface ColorStatus {
   greenCount: number
@@ -26,12 +38,15 @@ interface PerformanceData {
   metricColorStatusByLeaders: LeaderColorStatus[]
 }
 
+// Update the LeaderData interface to include metrics details
 interface LeaderData {
   id: string
   name: string
   green: number
   amber: number
   red: number
+  // Add metrics details
+  metrics?: MetricDetail[]
 }
 
 type LeaderPerformanceProps = {
@@ -70,14 +85,60 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
     let leaderData: LeaderData[] = []
 
     if (typedData.metricColorStatusByLeaders && Array.isArray(typedData.metricColorStatusByLeaders)) {
+      // In the useMemo function where we process the data, add mock metrics details
+      // Find the section where we map the leader data and add:
+
       leaderData = typedData.metricColorStatusByLeaders
-        .map((leader: LeaderColorStatus) => ({
-          id: leader.leaderId || "",
-          name: leader.leaderName || "",
-          green: leader.colorStatusByLeader?.greenCount || 0,
-          amber: leader.colorStatusByLeader?.amberCount || 0,
-          red: leader.colorStatusByLeader?.redCount || 0,
-        }))
+        .map((leader: LeaderColorStatus) => {
+          // Create mock metrics details for demonstration
+          // In a real implementation, this would come from your API
+          const mockMetrics: MetricDetail[] = []
+
+          // Add some mock green metrics
+          for (let i = 0; i < Math.min(leader.colorStatusByLeader?.greenCount || 0, 3); i++) {
+            mockMetrics.push({
+              metricId: 1000 + i,
+              metricPrefix: `PM${(1000 + i).toString().substring(1)}`,
+              metricName: `Performance Metric ${i + 1}`,
+              currentValue: 85 + Math.floor(Math.random() * 10),
+              target: 80,
+              status: "Green",
+            })
+          }
+
+          // Add some mock amber metrics
+          for (let i = 0; i < Math.min(leader.colorStatusByLeader?.amberCount || 0, 3); i++) {
+            mockMetrics.push({
+              metricId: 2000 + i,
+              metricPrefix: `PM${(2000 + i).toString().substring(1)}`,
+              metricName: `Response Time Metric ${i + 1}`,
+              currentValue: 65 + Math.floor(Math.random() * 10),
+              target: 75,
+              status: "Amber",
+            })
+          }
+
+          // Add some mock red metrics
+          for (let i = 0; i < Math.min(leader.colorStatusByLeader?.redCount || 0, 3); i++) {
+            mockMetrics.push({
+              metricId: 3000 + i,
+              metricPrefix: `PM${(3000 + i).toString().substring(1)}`,
+              metricName: `Critical Metric ${i + 1}`,
+              currentValue: 50 + Math.floor(Math.random() * 10),
+              target: 70,
+              status: "Red",
+            })
+          }
+
+          return {
+            id: leader.leaderId || "",
+            name: leader.leaderName || "",
+            green: leader.colorStatusByLeader?.greenCount || 0,
+            amber: leader.colorStatusByLeader?.amberCount || 0,
+            red: leader.colorStatusByLeader?.redCount || 0,
+            metrics: mockMetrics,
+          }
+        })
         // Filter out leaders with no metrics (all counts are 0)
         .filter((leader) => leader.green > 0 || leader.amber > 0 || leader.red > 0)
     }
@@ -147,10 +208,16 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                       {totals.green}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm">
-                    <div className="space-y-1">
+                  {/* Also update the top-level tooltips to show summary information
+                  // For the green top-level tooltip: */}
+                  <TooltipContent side="top" className="max-w-md p-4">
+                    <div className="space-y-2">
                       <p className="font-medium">Green Metrics: {totals.green}</p>
                       <p className="text-xs text-muted-foreground">Metrics meeting or exceeding target performance</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round((totals.green / (totals.green + totals.amber + totals.red)) * 100)}% of total
+                        metrics
+                      </p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -170,10 +237,15 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                       {totals.amber}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm">
-                    <div className="space-y-1">
+                  {/* For the amber top-level tooltip: */}
+                  <TooltipContent side="top" className="max-w-md p-4">
+                    <div className="space-y-2">
                       <p className="font-medium">Amber Metrics: {totals.amber}</p>
                       <p className="text-xs text-muted-foreground">Metrics between limit and target performance</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round((totals.amber / (totals.green + totals.amber + totals.red)) * 100)}% of total
+                        metrics
+                      </p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -190,10 +262,14 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                       {totals.red}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm">
-                    <div className="space-y-1">
+                  {/* For the red top-level tooltip: */}
+                  <TooltipContent side="top" className="max-w-md p-4">
+                    <div className="space-y-2">
                       <p className="font-medium">Red Metrics: {totals.red}</p>
                       <p className="text-xs text-muted-foreground">Metrics below limit performance</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round((totals.red / (totals.green + totals.amber + totals.red)) * 100)}% of total metrics
+                      </p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -223,8 +299,10 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                             {leader.green}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-sm">
-                          <div className="space-y-1">
+                        {/* Now update the tooltip content for the leader metrics to include the summary
+                        // Find the TooltipContent for green metrics and replace with: */}
+                        <TooltipContent side="top" className="max-w-md p-4">
+                          <div className="space-y-2">
                             <p className="font-medium">
                               {leader.name} - Green Metrics: {leader.green}
                             </p>
@@ -235,6 +313,28 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                               {Math.round((leader.green / (leader.green + leader.amber + leader.red)) * 100)}% of total
                               metrics
                             </p>
+
+                            {leader.metrics && leader.metrics.filter((m) => m.status === "Green").length > 0 && (
+                              <div className="mt-2 border-t pt-2">
+                                <p className="text-sm font-medium mb-1">Top performing metrics:</p>
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                  {leader.metrics
+                                    .filter((m) => m.status === "Green")
+                                    .slice(0, 3)
+                                    .map((metric) => (
+                                      <div key={metric.metricId} className="text-xs p-1 bg-green-50 rounded">
+                                        <div className="font-medium">
+                                          {metric.metricPrefix}: {metric.metricName}
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Current: {metric.currentValue}%</span>
+                                          <span>Target: {metric.target}%</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -254,8 +354,9 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                             {leader.amber}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-sm">
-                          <div className="space-y-1">
+                        {/* Do the same for amber metrics tooltip: */}
+                        <TooltipContent side="top" className="max-w-md p-4">
+                          <div className="space-y-2">
                             <p className="font-medium">
                               {leader.name} - Amber Metrics: {leader.amber}
                             </p>
@@ -266,6 +367,28 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                               {Math.round((leader.amber / (leader.green + leader.amber + leader.red)) * 100)}% of total
                               metrics
                             </p>
+
+                            {leader.metrics && leader.metrics.filter((m) => m.status === "Amber").length > 0 && (
+                              <div className="mt-2 border-t pt-2">
+                                <p className="text-sm font-medium mb-1">Metrics needing attention:</p>
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                  {leader.metrics
+                                    .filter((m) => m.status === "Amber")
+                                    .slice(0, 3)
+                                    .map((metric) => (
+                                      <div key={metric.metricId} className="text-xs p-1 bg-amber-50 rounded">
+                                        <div className="font-medium">
+                                          {metric.metricPrefix}: {metric.metricName}
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Current: {metric.currentValue}%</span>
+                                          <span>Target: {metric.target}%</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -285,8 +408,9 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                             {leader.red}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-sm">
-                          <div className="space-y-1">
+                        {/* And for red metrics tooltip: */}
+                        <TooltipContent side="top" className="max-w-md p-4">
+                          <div className="space-y-2">
                             <p className="font-medium">
                               {leader.name} - Red Metrics: {leader.red}
                             </p>
@@ -295,6 +419,28 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
                               {Math.round((leader.red / (leader.green + leader.amber + leader.red)) * 100)}% of total
                               metrics
                             </p>
+
+                            {leader.metrics && leader.metrics.filter((m) => m.status === "Red").length > 0 && (
+                              <div className="mt-2 border-t pt-2">
+                                <p className="text-sm font-medium mb-1">Critical metrics:</p>
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                  {leader.metrics
+                                    .filter((m) => m.status === "Red")
+                                    .slice(0, 3)
+                                    .map((metric) => (
+                                      <div key={metric.metricId} className="text-xs p-1 bg-red-50 rounded">
+                                        <div className="font-medium">
+                                          {metric.metricPrefix}: {metric.metricName}
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Current: {metric.currentValue}%</span>
+                                          <span>Target: {metric.target}%</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </TooltipContent>
                       </Tooltip>
