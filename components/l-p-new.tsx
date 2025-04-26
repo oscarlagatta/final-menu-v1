@@ -480,3 +480,60 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
     </Card>
   )
 }
+
+
+import React from 'react';
+import { FC } from 'react';
+
+const LeaderPerformance: FC = () => {
+  return (
+    <div>
+      <div className="leader-chart-container hide-scrollbar">
+        <div className="leader-chart" style={{ minWidth: 'max-content' }}>
+          {/* Placeholder for leader chart content */}
+          <p>Leader Performance Chart Content Here</p>
+          <p>
+            This content should be wider than the container to enable scrolling
+          </p>
+          <p>More content to demonstrate scrolling</p>
+          <p>Even more content</p>
+          <p>And some more</p>
+          <p>Last piece of content</p>
+        </div>
+      </div>
+      <style>
+        {`
+          /* Container styling for scrolling behavior */
+          .leader-chart-container {
+            position: relative;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            overflow-y: hidden; /* Prevent vertical scrolling */
+            white-space: nowrap; /* Prevent content from wrapping */
+            width: 100%; /* Full width of parent */
+          }
+
+          /* Hide scrollbars while keeping scrolling enabled */
+          .hide-scrollbar {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+          }
+
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+            width: 0;
+            height: 0;
+          }
+
+          /* Optional styling for child content */
+          .leader-chart {
+            display: inline-block;
+            /* Add spacing or padding as needed */
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export default LeaderPerformance;
+
