@@ -181,7 +181,7 @@ const MetricsGrid = () => {
   const handleToggleRow = useCallback(
     (metricId: number) => {
       // If there's already a pending action, ignore this click
-      if (pendingAction?.type) return;
+      if (pendingAction !== null) return;
 
       if (expandedMetrics.includes(metricId)) {
         // Collapse: Set a pending collapse action
