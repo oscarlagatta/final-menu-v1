@@ -476,17 +476,47 @@ const MetricsGrid = ({ selectedMonth, selectedLeader }: MetricsGridProps) => {
     resizable: true,
   };
 
-  if (
+   if (
     !sixMonthByMetricPerformance ||
     sixMonthByMetricPerformanceQuery.isLoading
   ) {
     return (
-      <div className="flex h-[600px] items-center justify-center">
-        <FetchingProgress />
+      <div className="h-[600px] w-full p-4">
+        <div className="mb-4 h-8 w-40 rounded-md bg-gray-200 animate-pulse"></div>
+        
+        {/* Skeleton for table header */}
+        <div className="flex mb-2 border-b pb-2">
+          <div className="flex-2 h-6 w-48 rounded-md bg-gray-200 animate-pulse mr-4"></div>
+          <div className="flex-1 h-6 w-24 rounded-md bg-gray-200 animate-pulse mr-4"></div>
+          <div className="flex-1 h-6 w-24 rounded-md bg-gray-200 animate-pulse mr-4"></div>
+          <div className="flex-1 h-6 w-24 rounded-md bg-gray-200 animate-pulse mr-4"></div>
+          <div className="flex-1 h-6 w-24 rounded-md bg-gray-200 animate-pulse"></div>
+        </div>
+        
+        {/* Skeleton for rows */}
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="flex py-3 border-b">
+            <div className="flex-2 flex items-center">
+              <div className="h-4 w-4 rounded-md bg-gray-200 animate-pulse mr-2"></div>
+              <div className="h-4 w-40 rounded-md bg-gray-200 animate-pulse"></div>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="h-4 w-16 rounded-md bg-gray-200 animate-pulse"></div>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="h-4 w-12 rounded-md bg-gray-200 animate-pulse"></div>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="h-4 w-12 rounded-md bg-gray-200 animate-pulse"></div>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="h-4 w-20 rounded-md bg-gray-200 animate-pulse"></div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
-
   return (
     <div className="ag-theme-alpine h-full w-full">
       <AgGridReact
