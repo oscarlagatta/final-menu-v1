@@ -272,7 +272,7 @@ const MetricsGrid = () => {
             >
               {isParent && (
                 <span
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', marginRight: '5px' }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggleRow(metricId);
@@ -371,7 +371,7 @@ const MetricsGrid = () => {
       },
       {
         headerName: 'Source',
-        filed: 'source',
+        field: 'source',
         flex: 1,
         filter: 'agTextColumnFilter',
         cellRenderer: (params: ICellRendererParams<GridRowData>) => {
@@ -414,7 +414,7 @@ const MetricsGrid = () => {
                 className="text-sm font-medium"
                 style={{
                   color:
-                    isParent && metricColor !== 'lightgreen'
+                    isParent && metricColor !== '#FFFFFF'
                       ? '#ffffff'
                       : '#595959',
                 }}
@@ -425,7 +425,7 @@ const MetricsGrid = () => {
                 className="text-xs font-medium"
                 style={{
                   color:
-                    isParent && metricColor !== 'lightgreen'
+                    isParent && metricColor !== '#FFFFFF'
                       ? '#d9d9d9'
                       : '#7f7f7f',
                 }}
