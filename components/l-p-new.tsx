@@ -170,10 +170,33 @@ export default function LeaderPerformance({ selectedMonth, selectedLeader }: Lea
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold">Leader Performance</CardTitle>
+          <Skeleton className="h-7 w-3/4 mb-2" />
+          <Skeleton className="h-4 w-full" />
         </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
-          <FetchingProgress />
+        <CardContent className="h-[400px]">
+          {/* Top-Level Performance Summary Skeleton */}
+          <div className="mb-6">
+            <Skeleton className="h-6 w-48 mb-3" />
+            <div className="flex items-center">
+              <Skeleton className="h-8 w-1/3 rounded-md mr-1" />
+              <Skeleton className="h-8 w-1/4 rounded-md mr-1" />
+              <Skeleton className="h-8 w-1/5 rounded-md" />
+            </div>
+          </div>
+
+          {/* Individual Leader Performance Skeletons */}
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="mb-4">
+                <Skeleton className="h-5 w-40 mb-1" />
+                <div className="flex items-center">
+                  <Skeleton className="h-8 w-1/3 rounded-md mr-1" />
+                  <Skeleton className="h-8 w-1/4 rounded-md mr-1" />
+                  <Skeleton className="h-8 w-1/5 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     )
