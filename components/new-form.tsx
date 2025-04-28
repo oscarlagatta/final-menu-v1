@@ -270,13 +270,13 @@ export function MetricDetailForm() {
                 </div>
 
                 {/* Main form content */}
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                   {/* Left column */}
-                  <div className="space-y-8">
+                  <div className="space-y-8 lg:col-span-6">
                     {/* Metric Information Section */}
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                       <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Metric Information</h2>
-                      <div className="space-y-4">
+                      <div className="space-y-5">
                         <FormField
                           control={form.control}
                           name="metricName"
@@ -492,7 +492,7 @@ export function MetricDetailForm() {
                     {/* Consequence Section */}
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                       <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Consequence Settings</h2>
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <FormField
                           control={form.control}
                           name="consequenceEligible"
@@ -570,13 +570,15 @@ export function MetricDetailForm() {
                             </FormItem>
                           )}
                         />
+                        {/* Add some spacing at the bottom for better balance */}
+                        <div className="h-4"></div>
                       </div>
                     </div>
 
                     {/* Value Settings Section */}
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                       <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Value Settings</h2>
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <FormField
                           control={form.control}
                           name="valueType"
@@ -674,38 +676,14 @@ export function MetricDetailForm() {
                             )}
                           />
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Additional Details Section */}
-                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                      <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Additional Details</h2>
-                      <div className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="additionalInformation"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>Additional Information</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  disabled={form.formState.isSubmitting}
-                                  placeholder="Please enter additional information..."
-                                  {...field}
-                                  value={field.value ?? ""}
-                                  className="min-h-[100px]"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Add some spacing at the bottom for better balance */}
+                        <div className="h-8"></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Right column */}
-                  <div className="space-y-8">
+                  <div className="space-y-8 lg:col-span-6">
                     {/* Metric Configuration Section */}
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                       <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Metric Configuration</h2>
@@ -1099,90 +1077,116 @@ export function MetricDetailForm() {
                       </div>
                     </div>
 
-                    {/* Audit Information Section */}
+                    {/* Additional Details Section */}
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                      <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Audit Information</h2>
+                      <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Additional Details</h2>
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormField
-                            disabled
-                            control={form.control}
-                            name="createdBy"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Created By</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Created By..."
-                                    {...field}
-                                    value={field.value ?? ""}
-                                    className="bg-gray-50"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            disabled
-                            control={form.control}
-                            name="createdDateTime"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Created Date</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Created Date..."
-                                    {...field}
-                                    value={formatDate(field.value ?? new Date())}
-                                    className="bg-gray-50"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormField
-                            disabled
-                            control={form.control}
-                            name="updatedBy"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Updated By</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Updated By..."
-                                    {...field}
-                                    value={field.value ?? ""}
-                                    className="bg-gray-50"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            disabled
-                            control={form.control}
-                            name="updatedDateTime"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Updated Date</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Updated Date..."
-                                    {...field}
-                                    value={formatDate(field.value ?? new Date())}
-                                    className="bg-gray-50"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                        <FormField
+                          control={form.control}
+                          name="additionalInformation"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Additional Information</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  disabled={form.formState.isSubmitting}
+                                  placeholder="Please enter additional information..."
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  className="min-h-[100px]"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audit Information Section */}
+                  <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 className="mb-4 text-lg font-medium text-gray-900 border-b pb-2">Audit Information</h2>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FormField
+                          disabled
+                          control={form.control}
+                          name="createdBy"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Created By</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Created By..."
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  className="bg-gray-50"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          disabled
+                          control={form.control}
+                          name="createdDateTime"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Created Date</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Created Date..."
+                                  {...field}
+                                  value={formatDate(field.value ?? new Date())}
+                                  className="bg-gray-50"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FormField
+                          disabled
+                          control={form.control}
+                          name="updatedBy"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Updated By</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Updated By..."
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  className="bg-gray-50"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          disabled
+                          control={form.control}
+                          name="updatedDateTime"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Updated Date</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Updated Date..."
+                                  {...field}
+                                  value={formatDate(field.value ?? new Date())}
+                                  className="bg-gray-50"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                   </div>
