@@ -6,7 +6,7 @@ import type { ColDef, GetRowIdParams, ICellRendererParams } from "ag-grid-commun
 import { AgGridReact } from "ag-grid-react"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
-import { type CellColorParams, type GridRowData, useDashboardData } from "@bofa/data-services"
+import { type CellColorParams, useDashboardData } from "@bofa/data-services"
 import { metricPerformanceColors } from "@bofa/util"
 
 import { MetricTooltip } from "./MetricTooltip"
@@ -153,11 +153,11 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
     // Get all available months from the first metric
     const allMonths = sixMonthByMetricPerformance[0].monthlyData
-      .map((m) => m.month)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()) // Sort newest first
+      .map((m: MonthData) => m.month)
+      .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime()) // Sort newest first
 
     // Find the index of the month in the sorted array
-    const index = allMonths.findIndex((m) => m === monthStr)
+    const index = allMonths.findIndex((m: string) => m === monthStr)
     if (index === -1) return null
 
     // Convert index to month name (first, second, etc.)
@@ -191,9 +191,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
         if (parentIndex !== -1) {
           // create child rows
-          const childRows = sltMetricPerformance.sltData.map((slt) => {
+          const childRows = sltMetricPerformance.sltData.map((slt: SltData) => {
             // Create a base row with SLT data
-            const childRow: any = {
+            const childRow: ExtendedGridRowData = {
               metricId: selectedMetricId,
               isParent: false,
               sltName: slt.sltName,
@@ -201,7 +201,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
             }
 
             // Add monthly data to the row
-            slt.sltMonthlyData.forEach((monthData) => {
+            slt.sltMonthlyData.forEach((monthData: SltMonthData) => {
               // Create month field names based on the month value
               const monthIndex = getMonthIndex(monthData.month)
               if (monthIndex) {
@@ -253,14 +253,14 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
     // Get all months from the first metric
     const allMonths = sixMonthByMetricPerformance[0].monthlyData
-      .map((m) => m.month)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()) // Sort newest first
+      .map((m: MonthData) => m.month)
+      .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime()) // Sort newest first
 
     // If a specific month is selected, only show that month
     if (selectedMonth) {
-      const filteredMonths = allMonths.filter((month) => month.startsWith(selectedMonth))
+      const filteredMonths = allMonths.filter((month: string) => month.startsWith(selectedMonth))
 
-      return filteredMonths.map((month) => {
+      return filteredMonths.map((month: string) => {
         const monthIndex = getMonthIndex(month)
         return {
           month,
@@ -270,7 +270,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     }
 
     // Otherwise, return all months (up to 6 for display)
-    return allMonths.slice(0, 6).map((month) => {
+    return allMonths.slice(0, 6).map((month: string) => {
       const monthIndex = getMonthIndex(month)
       return {
         month,
@@ -308,8 +308,8 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
     const colorField = monthField.replace("_Result", "_Color")
 
-    // Use a type assertion to tell TypeScript that params.data has the color fields
-    const data = params.data as GridRowData & {
+    // Use our new interfaces instead of GridRowData
+    const data = params.data as ExtendedGridRowData & {
       [key: string]: string | number | boolean | undefined
     }
 
@@ -346,9 +346,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
       {
         headerName: "Service Alignment",
         field: "serviceAlignment",
-        cellRenderer: (params: ICellRendererParams<GridRowData>) => {
+        cellRenderer: (params: ICellRendererParams) => {
           if (!params.data) return null
 
+          const data = params.data as ExtendedGridRowData
           const isParent = params.data.isParent
           const metricId = params.data.metricId
           const isExpanded = isParent && expandedMetrics.includes(metricId)
@@ -399,7 +400,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         field: "metricName",
         flex: 1,
         filter: "agTextColumnFilter",
-        cellRenderer: (params: ICellRendererParams<GridRowData>) => {
+        cellRenderer: (params: ICellRendererParams) => {
           return params.data?.isParent ? "[" + params.data.metricPrefix + "] " + params.data.metricName : ""
         },
       },
@@ -408,7 +409,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         field: "metricType",
         flex: 1,
         filter: "agTextColumnFilter",
-        cellRenderer: (params: ICellRendererParams<GridRowData>) => {
+        cellRenderer: (params: ICellRendererParams) => {
           return params.data?.isParent ? params.value : ""
         },
       },
@@ -441,10 +442,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
       },
       {
         headerName: "Source",
-        field: "source",
+        field: "source", // Changed from 'filed' to 'field'
         flex: 1,
         filter: "agTextColumnFilter",
-        cellRenderer: (params: ICellRendererParams<GridRowData>) => {
+        cellRenderer: (params: ICellRendererParams) => {
           return params.data?.isParent ? params.value : ""
         },
       },
