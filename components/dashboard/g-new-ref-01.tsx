@@ -472,6 +472,13 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     return color === "#f8f9fa" || color === "#f0f0f0"
   }
 
+  // Define header style with the requested background color
+  const headerStyle = {
+    backgroundColor: "#012169", // R:1, G:33, B:105
+    color: "#FFFFFF", // White text
+    border: "1px solid #000000", // Black border
+  }
+
   const columnDefs = useMemo<ColDef[]>(
     () => [
       {
@@ -529,6 +536,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellStyle: {
           border: "1px solid #000000", // Black border for all cells
         },
+        headerClass: "custom-header",
       },
       {
         headerName: "Metric",
@@ -543,6 +551,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellStyle: {
           border: "1px solid #000000", // Black border for all cells
         },
+        headerClass: "custom-header",
       },
       {
         headerName: "Metric Type",
@@ -556,6 +565,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellStyle: {
           border: "1px solid #000000", // Black border for all cells
         },
+        headerClass: "custom-header",
       },
       {
         headerName: "Thresholds",
@@ -588,6 +598,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellStyle: {
           border: "1px solid #000000", // Black border for all cells
         },
+        headerClass: "custom-header",
       },
       {
         headerName: "Source",
@@ -601,9 +612,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellStyle: {
           border: "1px solid #000000", // Black border for all cells
         },
+        headerClass: "custom-header",
       },
       ...monthColumns.map(({ month, result }) => ({
-        headerClass: "text-center",
+        headerClass: "custom-header text-center",
         headerName: month ? new Date(month).toLocaleDateString("en-US", { year: "numeric", month: "short" }) : "N/A",
         field: result,
         flex: 1,
@@ -755,6 +767,16 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     }
     .ag-row {
       border-color: #000000 !important;
+    }
+    .custom-header {
+      background-color: #012169 !important;
+      color: #FFFFFF !important;
+    }
+    .custom-header .ag-header-cell-text {
+      color: #FFFFFF !important;
+    }
+    .ag-header-cell-label {
+      color: #FFFFFF !important;
     }
   `
     document.head.appendChild(styleElement)
