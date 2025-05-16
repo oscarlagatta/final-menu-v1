@@ -467,6 +467,11 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     return "#f0f0f0" // Slightly darker gray for default
   }
 
+  // Function to determine if a background color is light
+  const isLightColor = (color: string): boolean => {
+    return color === "#f8f9fa" || color === "#f0f0f0"
+  }
+
   const columnDefs = useMemo<ColDef[]>(
     () => [
       {
@@ -521,6 +526,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         flex: 2,
         filter: "agTextColumnFilter",
         pinned: "left", // Pin this column to the left
+        cellStyle: {
+          border: "1px solid #000000", // Black border for all cells
+        },
       },
       {
         headerName: "Metric",
@@ -532,6 +540,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
           return data.isParent ? "[" + data.metricPrefix + "] " + data.metricName : ""
         },
         pinned: "left", // Pin this column to the left
+        cellStyle: {
+          border: "1px solid #000000", // Black border for all cells
+        },
       },
       {
         headerName: "Metric Type",
@@ -541,6 +552,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellRenderer: (params: ICellRendererParams) => {
           const data = params.data as GridRowData
           return data.isParent ? params.value : ""
+        },
+        cellStyle: {
+          border: "1px solid #000000", // Black border for all cells
         },
       },
       {
@@ -571,6 +585,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
             </div>
           )
         },
+        cellStyle: {
+          border: "1px solid #000000", // Black border for all cells
+        },
       },
       {
         headerName: "Source",
@@ -581,6 +598,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
           const data = params.data as GridRowData
           return data.isParent ? params.value : ""
         },
+        cellStyle: {
+          border: "1px solid #000000", // Black border for all cells
+        },
       },
       ...monthColumns.map(({ month, result }) => ({
         headerClass: "text-center",
@@ -589,13 +609,12 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         flex: 1,
         cellStyle: (params: any) => {
           const backgroundColor = getCellColor(params)
-          const isLightBackground = backgroundColor === "#f8f9fa" || backgroundColor === "#f0f0f0"
 
           return {
             textAlign: "center",
             backgroundColor: backgroundColor,
             color: !params.value || params.value === "NDTR" ? "gray" : "black",
-            border: isLightBackground ? "1px solid #e2e8f0" : "none", // Add border only for light backgrounds
+            border: "1px solid #000000", // Black border for all cells
           }
         },
         valueFormatter: (params: any) => {
@@ -613,7 +632,24 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
           const data = params.data as GridRowData
           const [percentage, numerator, denominator] = parts
           const isParent = data.isParent
-          const metricColor = data.metricColor
+
+          // Get the cell color to determine text color
+          const colorField = params.column.getColId().replace("_Result", "_Color")
+          const cellColor = data[colorField]
+
+          // Determine if this is a light background cell
+          let isLightBg = true
+          if (typeof cellColor === "string") {
+            const color = cellColor.toLowerCase()
+            isLightBg =
+              color !== "#e61622" &&
+              color !== "red" &&
+              color !== "#009223" &&
+              color !== "green" &&
+              color !== "#ffbf00" &&
+              color !== "amber"
+          }
+
           const formattedPercentage = Number.parseFloat(percentage).toFixed(2) + (data.valueType === "%" ? "%" : "")
           const formattedFraction = `${numerator}/${denominator}`
 
@@ -622,7 +658,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
               <div
                 className="text-sm font-medium"
                 style={{
-                  color: isParent && metricColor !== "lightgreen" ? "#ffffff" : "#595959",
+                  color: isLightBg ? "#000000" : "#ffffff", // Black text for light backgrounds, white for dark
                 }}
               >
                 {formattedPercentage}
@@ -630,7 +666,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
               <div
                 className="text-xs font-medium"
                 style={{
-                  color: isParent && metricColor !== "lightgreen" ? "#d9d9d9" : "#7f7f7f",
+                  color: isLightBg ? "#000000" : "#d9d9d9", // Black text for light backgrounds, light gray for dark
                 }}
               >
                 {formattedFraction}
@@ -693,7 +729,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     )
   }
 
-  // Add CSS for better horizontal scrolling
+  // Add CSS for better horizontal scrolling and grid styling
   useEffect(() => {
     if (!isGridMounted) return
     // Create a style element for grid styles
@@ -713,6 +749,12 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     }
     .ag-body-viewport {
       overflow-x: auto !important;
+    }
+    .ag-header-cell {
+      border: 1px solid #000000 !important;
+    }
+    .ag-row {
+      border-color: #000000 !important;
     }
   `
     document.head.appendChild(styleElement)
