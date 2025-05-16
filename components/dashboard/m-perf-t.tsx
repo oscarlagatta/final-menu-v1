@@ -69,10 +69,13 @@ export default function MetricPerformanceTrend({
       (a: string, b: string) => new Date(b).getTime() - new Date(a).getTime(),
     )
 
-    console.log(`Performance Trend: Found ${allMonths.length} unique months across all metrics:`, allMonths)
+    // Limit to 12 months for better visualization
+    const monthsToShow = allMonths.slice(0, 12)
+
+    console.log(`Performance Trend: Found ${allMonths.length} unique months, showing ${monthsToShow.length} months`)
 
     // For each month, calculate the percentage of metrics that are green, amber, and red
-    return allMonths.map((month) => {
+    return monthsToShow.map((month) => {
       // Initialize counters
       let greenCount = 0
       let amberCount = 0
@@ -172,7 +175,7 @@ export default function MetricPerformanceTrend({
         <CardTitle>Metric Performance Trend</CardTitle>
         <CardDescription>
           Percentage of metrics by performance status over time
-          {selectedMonth ? ` (Filtered to ${selectedMonth})` : ""}
+          {selectedMonth ? ` (Filtered to ${selectedMonth})` : " (Last 12 months)"}
           {selectedLeader ? ` (Leader: ${selectedLeader.name})` : ""}
         </CardDescription>
       </CardHeader>
