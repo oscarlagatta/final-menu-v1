@@ -10,7 +10,6 @@ import { type CellColorParams, useDashboardData } from "@bofa/data-services"
 import { metricPerformanceColors } from "@bofa/util"
 
 import { MetricTooltip } from "./MetricTooltip"
-import type { ExtendedGridRowData } from "./types"
 
 import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
@@ -68,6 +67,26 @@ interface SltResponse {
   sltData: SltData[]
 }
 
+// Define the grid row data structure
+interface GridRowData {
+  metricId: number
+  metricPrefix?: string
+  metricName?: string
+  valueType?: string
+  metricDescription?: string
+  metricCalculation?: string
+  serviceAlignment?: string
+  trigger?: number
+  limit?: number
+  source?: string
+  metricType?: string
+  isParent: boolean
+  sltName?: string
+  sltNBId?: string
+  // Dynamic month fields will be added at runtime
+  [key: string]: any
+}
+
 const LoadingSpinner = () => (
   <div className="relative h-5 w-5">
     <div className="absolute inset-0 animate-spin rounded-full border-2 border-b-amber-500 border-l-red-500 border-r-green-500 border-t-transparent"></div>
@@ -80,7 +99,7 @@ const LoadingSpinner = () => (
 const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGridProps) => {
   const [expandedMetrics, setExpandedMetrics] = useState<number[]>([])
   const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null)
-  const [gridData, setGridData] = useState<ExtendedGridRowData[]>([])
+  const [gridData, setGridData] = useState<GridRowData[]>([])
   const [pendingAction, setPendingAction] = useState<{
     type: "expand" | "collapse"
     metricId: number
@@ -112,7 +131,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     if (sixMonthByMetricPerformance) {
       const baseData = sixMonthByMetricPerformance.map((metric: MetricData) => {
         // Create a base row with metric data
-        const baseRow: any = {
+        const baseRow: GridRowData = {
           metricId: metric.metricId,
           metricPrefix: metric.metricPrefix,
           metricName: metric.metricName,
@@ -193,7 +212,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
           // create child rows
           const childRows = sltMetricPerformance.sltData.map((slt: SltData) => {
             // Create a base row with SLT data
-            const childRow: ExtendedGridRowData = {
+            const childRow: GridRowData = {
               metricId: selectedMetricId,
               isParent: false,
               sltName: slt.sltName,
@@ -308,12 +327,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
     const colorField = monthField.replace("_Result", "_Color")
 
-    // Use our new interfaces instead of GridRowData
-    const data = params.data as ExtendedGridRowData & {
-      [key: string]: string | number | boolean | undefined
-    }
+    // Use our new GridRowData interface
+    const data = params.data as GridRowData
 
-    const isParent = params.data.isParent
+    const isParent = data.isParent
 
     if (colorField in data) {
       const color = data[colorField]
@@ -349,9 +366,9 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         cellRenderer: (params: ICellRendererParams) => {
           if (!params.data) return null
 
-          const data = params.data as ExtendedGridRowData
-          const isParent = params.data.isParent
-          const metricId = params.data.metricId
+          const data = params.data as GridRowData
+          const isParent = data.isParent
+          const metricId = data.metricId
           const isExpanded = isParent && expandedMetrics.includes(metricId)
           const isLoading =
             isParent &&
@@ -377,15 +394,15 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
                   )}
                 </span>
               )}
-              {isParent ? params.value : <div style={{ paddingLeft: "24px" }}>{params.data.sltName}</div>}
+              {isParent ? params.value : <div style={{ paddingLeft: "24px" }}>{data.sltName}</div>}
             </div>
           )
 
           return (
             <MetricTooltip
-              metricName={isParent ? (params.data.metricName ?? "") : (params.data.sltName ?? "")}
-              metricDescription={isParent ? (params.data.metricDescription ?? "") : ""}
-              metricCalculation={isParent ? (params.data.metricCalculation ?? "") : ""}
+              metricName={isParent ? (data.metricName ?? "") : (data.sltName ?? "")}
+              metricDescription={isParent ? (data.metricDescription ?? "") : ""}
+              metricCalculation={isParent ? (data.metricCalculation ?? "") : ""}
               isLoading={false}
             >
               {content}
@@ -401,7 +418,8 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         flex: 1,
         filter: "agTextColumnFilter",
         cellRenderer: (params: ICellRendererParams) => {
-          return params.data?.isParent ? "[" + params.data.metricPrefix + "] " + params.data.metricName : ""
+          const data = params.data as GridRowData
+          return data.isParent ? "[" + data.metricPrefix + "] " + data.metricName : ""
         },
       },
       {
@@ -410,7 +428,8 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         flex: 1,
         filter: "agTextColumnFilter",
         cellRenderer: (params: ICellRendererParams) => {
-          return params.data?.isParent ? params.value : ""
+          const data = params.data as GridRowData
+          return data.isParent ? params.value : ""
         },
       },
       {
@@ -422,9 +441,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
           color: "green",
         }),
         valueFormatter: (params) => {
+          const data = params.data as GridRowData
           if (params.value === null) return "n/a"
-          if (!params.data?.isParent) return ""
-          return params.data.valueType === "%" ? `${params.value.toFixed(2)}%` : params.value.toFixed(2)
+          if (!data.isParent) return ""
+          return data.valueType === "%" ? `${params.value.toFixed(2)}%` : params.value.toFixed(2)
         },
         filter: "agNumberColumnFilter",
       },
@@ -434,19 +454,21 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         flex: 1,
         cellStyle: { textAlign: "center", color: "red" },
         valueFormatter: (params) => {
+          const data = params.data as GridRowData
           if (params.value === null) return "n/a"
-          if (!params.data?.isParent) return ""
-          return params.data.valueType === "%" ? `${params.value.toFixed(2)}%` : params.value.toFixed(2)
+          if (!data.isParent) return ""
+          return data.valueType === "%" ? `${params.value.toFixed(2)}%` : params.value.toFixed(2)
         },
         filter: "agNumberColumnFilter",
       },
       {
         headerName: "Source",
-        field: "source", // Changed from 'filed' to 'field'
+        field: "source",
         flex: 1,
         filter: "agTextColumnFilter",
         cellRenderer: (params: ICellRendererParams) => {
-          return params.data?.isParent ? params.value : ""
+          const data = params.data as GridRowData
+          return data.isParent ? params.value : ""
         },
       },
       ...monthColumns.map(({ month, result }) => ({
@@ -471,11 +493,11 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
           if (parts.length !== 3) return params.value
 
+          const data = params.data as GridRowData
           const [percentage, numerator, denominator] = parts
-          const isParent = params.data.isParent
-          const metricColor = params.data.metricColor
-          const formattedPercentage =
-            Number.parseFloat(percentage).toFixed(2) + (params.data.valueType === "%" ? "%" : "")
+          const isParent = data.isParent
+          const metricColor = data.metricColor
+          const formattedPercentage = Number.parseFloat(percentage).toFixed(2) + (data.valueType === "%" ? "%" : "")
           const formattedFraction = `${numerator}/${denominator}`
 
           return (
