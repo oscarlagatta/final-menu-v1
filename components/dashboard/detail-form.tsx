@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"
-import { AlertCircle, Check, CheckCircle2, ChevronsUpDown } from 'lucide-react'
+import { AlertCircle, Check, CheckCircle2, ChevronsUpDown } from "lucide-react"
 import { toast } from "sonner"
 
 import { useAuth, useAuthzRules } from "@bofa/auth"
@@ -326,10 +326,7 @@ export function MetricDetailForm() {
                                                                             disabled={form.formState.isSubmitting}
                                                                             variant="outline"
                                                                             role="combobox"
-                                                                            className={cn(
-                                                                                "w-full justify-between",
-                                                                                !field.value && "text-muted-foreground",
-                                                                            )}
+                                                                            className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
                                                                         >
                                                                             {field.value
                                                                                 ? statuses.find((type) => type.value === field.value)?.label
@@ -384,10 +381,7 @@ export function MetricDetailForm() {
                                                                             disabled={form.formState.isSubmitting}
                                                                             variant="outline"
                                                                             role="combobox"
-                                                                            className={cn(
-                                                                                "w-full justify-between",
-                                                                                !field.value && "text-muted-foreground",
-                                                                            )}
+                                                                            className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
                                                                         >
                                                                             {field.value
                                                                                 ? metricTypes?.find((type) => type.id === field.value)?.name
@@ -468,9 +462,7 @@ export function MetricDetailForm() {
                                                                         }}
                                                                     />
                                                                     <CommandList>
-                                                                        <CommandEmpty>
-                                                                            {isSearchLoading ? "Searching..." : "No owner found."}
-                                                                        </CommandEmpty>
+                                                                        <CommandEmpty>{isSearchLoading ? "Searching..." : "No owner found."}</CommandEmpty>
                                                                         <CommandGroup>
                                                                             {Array.isArray(users) &&
                                                                                 users?.map((user: UserModel) => (
@@ -643,9 +635,7 @@ export function MetricDetailForm() {
                                                                     type="number"
                                                                     {...field}
                                                                     value={field.value}
-                                                                    onChange={(e) =>
-                                                                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                                                                    }
+                                                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                                                 />
                                                             </FormControl>
                                                             <FormMessage />
@@ -663,9 +653,7 @@ export function MetricDetailForm() {
                                                                     type="number"
                                                                     {...field}
                                                                     value={field.value !== undefined ? String(field.value) : ""}
-                                                                    onChange={(e) =>
-                                                                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                                                                    }
+                                                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                                                 />
                                                             </FormControl>
                                                             <FormMessage />
@@ -820,4 +808,338 @@ export function MetricDetailForm() {
                                                                         {field.value
                                                                             ? metricAlignmentIdentifiers?.find((service) => service.id === field.value)?.name
                                                                             : "Select alignment"}
-                                                                        <ChevronsUpDown className="ml-2 h-
+                                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                                <Command>
+                                                                    <CommandInput placeholder="Search service..." />
+                                                                    <CommandList>
+                                                                        <CommandEmpty>No metric alignment identifier found.</CommandEmpty>
+                                                                        <CommandGroup>
+                                                                            {metricAlignmentIdentifiers?.map((metric) => (
+                                                                                <CommandItem
+                                                                                    value={metric.name ?? ""}
+                                                                                    key={metric.id}
+                                                                                    onSelect={() => {
+                                                                                        form.setValue("metricAlignmentIdentifierId", metric.id)
+                                                                                        setMetricAlignmentPopOverOpen(false)
+                                                                                    }}
+                                                                                >
+                                                                                    <Check
+                                                                                        className={cn(
+                                                                                            "mr-2 h-4 w-4",
+                                                                                            metric.name === field.value ? "opacity-100" : "opacity-0",
+                                                                                        )}
+                                                                                    />
+                                                                                    {metric.name}
+                                                                                </CommandItem>
+                                                                            ))}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="dataGranularityId"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-col">
+                                                        <FormLabel className="text-base">Granularity</FormLabel>
+                                                        <Popover open={granularityNamePopOverOpen} onOpenChange={setGranularityNamePopOverOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button
+                                                                        disabled={form.formState.isSubmitting}
+                                                                        variant="outline"
+                                                                        role="combobox"
+                                                                        className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                                                    >
+                                                                        {field.value
+                                                                            ? granularity?.find((g) => g.id === field.value)?.name
+                                                                            : "Select granularity"}
+                                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                                <Command>
+                                                                    <CommandInput placeholder="Search granularity..." />
+                                                                    <CommandList>
+                                                                        <CommandEmpty>No granularity found.</CommandEmpty>
+                                                                        <CommandGroup>
+                                                                            {granularity?.map((granularity) => (
+                                                                                <CommandItem
+                                                                                    value={granularity.name ?? ""}
+                                                                                    key={granularity.id}
+                                                                                    onSelect={() => {
+                                                                                        form.setValue("dataGranularityId", granularity.id)
+                                                                                        setGranularityNamePopOverOpen(false)
+                                                                                    }}
+                                                                                >
+                                                                                    <CheckIcon
+                                                                                        className={cn(
+                                                                                            "mr-2 h-4 w-4",
+                                                                                            granularity.id === field.value ? "opacity-100" : "opacity-0",
+                                                                                        )}
+                                                                                    />
+                                                                                    {granularity.name}
+                                                                                </CommandItem>
+                                                                            ))}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Consequence Setting Section */}
+                                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                                        <h2 className="mb-6 text-lg font-medium text-gray-900 border-b pb-2">Consequence Settings</h2>
+                                        <div className="space-y-6">
+                                            <FormField
+                                                control={form.control}
+                                                name="consequenceEligible"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                        <div className="space-y-0.5">
+                                                            <FormLabel className="text-base">Consequence Eligible</FormLabel>
+                                                            <FormDescription>Eligibility criteria for regulatory capital.</FormDescription>
+                                                        </div>
+                                                        <FormControl>
+                                                            <Switch
+                                                                disabled={form.formState.isSubmitting}
+                                                                checked={field.value ?? false}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Metric Schedule Section */}
+                                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                                        <h2 className="mb-6 text-lg font-medium text-gray-900 border-b pb-2">Metric Schedule</h2>
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="runFrequencyId"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Run Frequency</FormLabel>
+                                                            <Popover open={runFrequencyPopOverOpen} onOpenChange={setRunFrequencyPopOverOpen}>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            disabled={form.formState.isSubmitting}
+                                                                            variant="outline"
+                                                                            role="combobox"
+                                                                            className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                                                        >
+                                                                            {field.value
+                                                                                ? runFrequencies?.find((type) => type.id === field.value)?.name
+                                                                                : "Select run frequency"}
+                                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                                    <Command>
+                                                                        <CommandInput placeholder="Search service..." />
+                                                                        <CommandList>
+                                                                            <CommandEmpty>No run frequency found.</CommandEmpty>
+                                                                            <CommandGroup>
+                                                                                {runFrequencies?.map((type) => (
+                                                                                    <CommandItem
+                                                                                        value={type.name ?? ""}
+                                                                                        key={type.id}
+                                                                                        onSelect={() => {
+                                                                                            form.setValue("runFrequencyId", type.id)
+                                                                                            setRunFrequencyPopOverOpen(false)
+                                                                                        }}
+                                                                                    >
+                                                                                        <CheckIcon
+                                                                                            className={cn(
+                                                                                                "mr-2 h-4 w-4",
+                                                                                                type.name === field.value ? "opacity-100" : "opacity-0",
+                                                                                            )}
+                                                                                        />
+                                                                                        {type.name}
+                                                                                    </CommandItem>
+                                                                                ))}
+                                                                            </CommandGroup>
+                                                                        </CommandList>
+                                                                    </Command>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="runDay"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Business Day</FormLabel>
+                                                            <Popover open={runDayPopoverOpen} onOpenChange={setRunDayPopoverOpen}>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            disabled={form.formState.isSubmitting}
+                                                                            variant="outline"
+                                                                            role="combobox"
+                                                                            className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                                                        >
+                                                                            {field.value
+                                                                                ? runDayOptions?.find((type) => type.value === field.value)?.label
+                                                                                : "Select run day"}
+                                                                            <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                                    <Command>
+                                                                        <CommandInput placeholder="Search service..." />
+                                                                        <CommandList>
+                                                                            <CommandEmpty>No run days found.</CommandEmpty>
+                                                                            <CommandGroup>
+                                                                                {runDayOptions?.map((value) => (
+                                                                                    <CommandItem
+                                                                                        value={value.label ?? ""}
+                                                                                        key={value.value}
+                                                                                        onSelect={() => {
+                                                                                            form.setValue("runDay", value.value)
+                                                                                            setRunDayPopoverOpen(false)
+                                                                                        }}
+                                                                                    >
+                                                                                        <CheckIcon
+                                                                                            className={cn(
+                                                                                                "mr-2 h-4 w-4",
+                                                                                                value.value === field.value ? "opacity-100" : "opacity-0",
+                                                                                            )}
+                                                                                        />
+                                                                                        {value.label}
+                                                                                    </CommandItem>
+                                                                                ))}
+                                                                            </CommandGroup>
+                                                                        </CommandList>
+                                                                    </Command>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Audit Information Section */}
+                                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                                        <h2 className="mb-6 text-lg font-medium text-gray-900 border-b pb-2">Audit Information</h2>
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                                <FormField
+                                                    disabled
+                                                    control={form.control}
+                                                    name="createdBy"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Created By</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="Created By..."
+                                                                    {...field}
+                                                                    value={field.value ?? ""}
+                                                                    className="bg-gray-50"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    disabled
+                                                    control={form.control}
+                                                    name="createdDateTime"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Created Date</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="Created Date..."
+                                                                    {...field}
+                                                                    value={formatDate(field.value ?? new Date())}
+                                                                    className="bg-gray-50"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                                <FormField
+                                                    disabled
+                                                    control={form.control}
+                                                    name="updatedBy"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Updated By</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="Updated By..."
+                                                                    {...field}
+                                                                    value={field.value ?? ""}
+                                                                    className="bg-gray-50"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    disabled
+                                                    control={form.control}
+                                                    name="updatedDateTime"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel className="text-base">Updated Date</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="Updated Date..."
+                                                                    {...field}
+                                                                    value={formatDate(field.value ?? new Date())}
+                                                                    className="bg-gray-50"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </Form>
+                )}
+            </div>
+        </>
+    )
+}
