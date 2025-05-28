@@ -95,9 +95,14 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
   const gridApiRef = useRef<any>(null)
   const [masterRowData, setMasterRowData] = useState<MasterRowData[]>([])
   const [sltDataCache, setSltDataCache] = useState<Map<number, DetailRowData[]>>(new Map())
-  const [pendingSltRequests, setPendingSltRequests] = useState<Map<number, any>>(new Map())
+  const [pendingSltRequests, setPendingSltRequests] = useState<Map<number, Promise<DetailRowData[]>>>(new Map())
+
+  // Get the dashboard data and SLT metric performance function at the top level
   const { sixMonthByMetricPerformance, useGetSltMetricPerformance, sixMonthByMetricPerformanceQuery } =
     useDashboardData(selectedMonth, selectedLeader?.id, metricTypeId)
+
+  // Store the SLT metric performance function reference
+  const getSltMetricPerformance = useGetSltMetricPerformance
 
   const [isLoading, setIsLoading] = useState(true)
   const [isGridMounted, setIsGridMounted] = useState(false)
@@ -281,15 +286,17 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     return "#f0f0f0"
   }
 
-  // Function to fetch SLT data using the hook
+  // Function to fetch SLT data using the stored function reference
   const fetchSltData = useCallback(
     async (metricId: number): Promise<DetailRowData[]> => {
-      const sltResponse = await useGetSltMetricPerformanceInner(
-        metricId,
-        selectedMonth ?? undefined,
-        selectedLeader?.id ?? undefined,
-      )
       try {
+        // Use the stored function reference, not calling the hook again
+        const sltResponse = await getSltMetricPerformance(
+          metricId,
+          selectedMonth ?? undefined,
+          selectedLeader?.id ?? undefined,
+        )
+
         if (sltResponse && Array.isArray(sltResponse.sltData)) {
           const detailData = sltResponse.sltData.map((slt: SltData) => {
             // Create a properly typed DetailRowData object
@@ -321,14 +328,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         return []
       }
     },
-    [selectedMonth, selectedLeader, getMonthIndex],
-  )
-
-  const useGetSltMetricPerformanceInner = useCallback(
-    async (metricId: number, selectedMonth?: string, selectedLeaderId?: string) => {
-      return await useGetSltMetricPerformance(metricId, selectedMonth, selectedLeaderId)
-    },
-    [useGetSltMetricPerformance],
+    [getSltMetricPerformance, selectedMonth, selectedLeader, getMonthIndex],
   )
 
   // Function to load SLT data for detail grid
