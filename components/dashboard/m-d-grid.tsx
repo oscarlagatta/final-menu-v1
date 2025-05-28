@@ -95,7 +95,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
   const gridApiRef = useRef<any>(null)
   const [masterRowData, setMasterRowData] = useState<MasterRowData[]>([])
   const [sltDataCache, setSltDataCache] = useState<Map<number, DetailRowData[]>>(new Map())
-  const [sltDataLoading, setSltDataLoading] = useState<Set<number>>(new Set())
+  const [pendingSltRequests, setPendingSltRequests] = useState<Map<number, any>>(new Map())
 
   // Pass selectedLeader and selectedMonth to the useDashboardData hook
   const { sixMonthByMetricPerformance, useGetSltMetricPerformance, sixMonthByMetricPerformanceQuery } =
@@ -280,6 +280,48 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     return "#f0f0f0"
   }
 
+  // Function to fetch SLT data using the hook
+  const fetchSltData = useCallback(
+    async (metricId: number): Promise<DetailRowData[]> => {
+      try {
+        const sltResponse = await useGetSltMetricPerformance(
+          metricId,
+          selectedMonth ?? undefined,
+          selectedLeader?.id ?? undefined,
+        )
+
+        if (sltResponse && sltResponse.sltData) {
+          const detailData = sltResponse.sltData.map((slt: SltData) => {
+            const detailRow: DetailRowData = {
+              sltNbkId: slt.sltNbkId,
+              sltName: slt.sltName,
+            }
+
+            // Add monthly data to the detail row
+            slt.sltMonthlyData.forEach((monthData: SltMonthData) => {
+              const monthIndex = getMonthIndex(monthData.month)
+              if (monthIndex) {
+                detailRow[`${monthIndex}Month`] = monthData.month
+                detailRow[`${monthIndex}Month_Result`] = monthData.result
+                detailRow[`${monthIndex}Month_Color`] = monthData.color
+              }
+            })
+
+            return detailRow
+          })
+
+          return detailData
+        }
+
+        return []
+      } catch (error) {
+        console.error("Error fetching SLT data:", error)
+        return []
+      }
+    },
+    [useGetSltMetricPerformance, selectedMonth, selectedLeader],
+  )
+
   // Master grid column definitions
   const masterColumnDefs = useMemo<ColDef[]>(
     () => [
@@ -384,7 +426,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
           const [percentage, numerator, denominator] = parts
           const data = params.data as MasterRowData
-          const metricColor = data.metricColor
+          const metricColor = data["metricColor"] // Use bracket notation for index signature
           const formattedPercentage = Number.parseFloat(percentage).toFixed(2) + (data.valueType === "%" ? "%" : "")
           const formattedFraction = `${numerator}/${denominator}`
 
@@ -483,69 +525,55 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
 
   // Function to load SLT data for detail grid
   const getDetailRowData = useCallback(
-    (params: any) => {
+    async (params: any) => {
       const metricId = params.data.metricId
 
-      // Check if data is already cached
-      if (sltDataCache.has(metricId)) {
-        params.successCallback(sltDataCache.get(metricId))
-        return
+      try {
+        // Check if data is already cached
+        if (sltDataCache.has(metricId)) {
+          params.successCallback(sltDataCache.get(metricId))
+          return
+        }
+
+        // Check if there's already a pending request for this metric
+        if (pendingSltRequests.has(metricId)) {
+          const existingRequest = pendingSltRequests.get(metricId)
+          const result = await existingRequest
+          params.successCallback(result)
+          return
+        }
+
+        // Create new request
+        const requestPromise = fetchSltData(metricId)
+        setPendingSltRequests((prev) => new Map(prev).set(metricId, requestPromise))
+
+        const detailData = await requestPromise
+
+        // Cache the data
+        setSltDataCache((prev) => new Map(prev).set(metricId, detailData))
+
+        // Remove from pending requests
+        setPendingSltRequests((prev) => {
+          const newMap = new Map(prev)
+          newMap.delete(metricId)
+          return newMap
+        })
+
+        params.successCallback(detailData)
+      } catch (error) {
+        console.error("Error loading detail data:", error)
+
+        // Remove from pending requests on error
+        setPendingSltRequests((prev) => {
+          const newMap = new Map(prev)
+          newMap.delete(metricId)
+          return newMap
+        })
+
+        params.successCallback([])
       }
-
-      if (sltDataLoading.has(metricId)) {
-        return // Already loading data for this metricId
-      }
-
-      setSltDataLoading((prev) => new Set(prev).add(metricId))
-
-      useGetSltMetricPerformance(metricId, selectedMonth ?? undefined, selectedLeader?.id ?? undefined, {
-        onSuccess: (sltResponse) => {
-          try {
-            if (sltResponse && sltResponse.sltData) {
-              const detailData = sltResponse.sltData.map((slt: SltData) => {
-                const detailRow: DetailRowData = {
-                  sltNbkId: slt.sltNbkId,
-                  sltName: slt.sltName,
-                }
-
-                // Add monthly data to the detail row
-                slt.sltMonthlyData.forEach((monthData: SltMonthData) => {
-                  const monthIndex = getMonthIndex(monthData.month)
-                  if (monthIndex) {
-                    detailRow[`${monthIndex}Month`] = monthData.month
-                    detailRow[`${monthIndex}Month_Result`] = monthData.result
-                    detailRow[`${monthIndex}Month_Color`] = monthData.color
-                  }
-                })
-
-                return detailRow
-              })
-
-              // Cache the data
-              setSltDataCache((prev) => new Map(prev).set(metricId, detailData))
-              params.successCallback(detailData)
-            } else {
-              params.successCallback([])
-            }
-          } finally {
-            setSltDataLoading((prev) => {
-              const newSet = new Set(prev)
-              newSet.delete(metricId)
-              return newSet
-            })
-          }
-        },
-        onError: () => {
-          setSltDataLoading((prev) => {
-            const newSet = new Set(prev)
-            newSet.delete(metricId)
-            return newSet
-          })
-          params.successCallback([])
-        },
-      })
     },
-    [selectedMonth, selectedLeader, sltDataCache, useGetSltMetricPerformance],
+    [sltDataCache, pendingSltRequests, fetchSltData],
   )
 
   useEffect(() => {
