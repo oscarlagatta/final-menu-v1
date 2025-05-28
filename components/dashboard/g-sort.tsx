@@ -369,17 +369,27 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
   const customSortComparator = (valueA: any, valueB: any, nodeA: any, nodeB: any, isDescending: boolean) => {
     const dataA = nodeA.data as GridRowData
     const dataB = nodeB.data as GridRowData
+    const fieldName = nodeA.colDef.field
 
-    // If both are parent rows, sort normally
+    // If both are parent rows, sort normally by the actual field value
     if (dataA.isParent && dataB.isParent) {
-      // Handle null/undefined values
-      if (valueA == null && valueB == null) return 0
-      if (valueA == null) return isDescending ? 1 : -1
-      if (valueB == null) return isDescending ? -1 : 1
+      let compareValueA = valueA
+      let compareValueB = valueB
 
-      // Convert to string for comparison if needed
-      const strA = String(valueA).toLowerCase()
-      const strB = String(valueB).toLowerCase()
+      // For Service Alignment column, use the serviceAlignment field directly
+      if (fieldName === "serviceAlignment") {
+        compareValueA = dataA.serviceAlignment
+        compareValueB = dataB.serviceAlignment
+      }
+
+      // Handle null/undefined values
+      if (compareValueA == null && compareValueB == null) return 0
+      if (compareValueA == null) return isDescending ? 1 : -1
+      if (compareValueB == null) return isDescending ? -1 : 1
+
+      // Convert to string for comparison
+      const strA = String(compareValueA).toLowerCase()
+      const strB = String(compareValueB).toLowerCase()
 
       if (strA < strB) return isDescending ? 1 : -1
       if (strA > strB) return isDescending ? -1 : 1
@@ -390,10 +400,15 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     if (dataA.isParent && !dataB.isParent) {
       // If dataB is a child of dataA, dataA should come first
       if (dataB.metricId === dataA.metricId) return -1
-      // Otherwise, sort normally by comparing parent with child's parent
+
+      // Otherwise, compare parent A with parent of child B
       const parentB = gridData.find((row) => row.isParent && row.metricId === dataB.metricId)
       if (parentB) {
-        return customSortComparator(valueA, parentB[nodeA.field], nodeA, { data: parentB }, isDescending)
+        let parentBValue = parentB[fieldName]
+        if (fieldName === "serviceAlignment") {
+          parentBValue = parentB.serviceAlignment
+        }
+        return customSortComparator(valueA, parentBValue, nodeA, { data: parentB, colDef: nodeA.colDef }, isDescending)
       }
       return -1
     }
@@ -401,10 +416,15 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     if (!dataA.isParent && dataB.isParent) {
       // If dataA is a child of dataB, dataB should come first
       if (dataA.metricId === dataB.metricId) return 1
-      // Otherwise, sort normally by comparing child's parent with parent
+
+      // Otherwise, compare parent of child A with parent B
       const parentA = gridData.find((row) => row.isParent && row.metricId === dataA.metricId)
       if (parentA) {
-        return customSortComparator(parentA[nodeB.field], valueB, { data: parentA }, nodeB, isDescending)
+        let parentAValue = parentA[fieldName]
+        if (fieldName === "serviceAlignment") {
+          parentAValue = parentA.serviceAlignment
+        }
+        return customSortComparator(parentAValue, valueB, { data: parentA, colDef: nodeB.colDef }, nodeB, isDescending)
       }
       return 1
     }
@@ -412,7 +432,7 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
     // If both are children, check if they belong to the same parent
     if (!dataA.isParent && !dataB.isParent) {
       if (dataA.metricId === dataB.metricId) {
-        // Same parent, sort by SLT name
+        // Same parent, sort children by SLT name
         const sltNameA = dataA.sltName || ""
         const sltNameB = dataB.sltName || ""
         if (sltNameA < sltNameB) return isDescending ? 1 : -1
@@ -423,11 +443,19 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         const parentA = gridData.find((row) => row.isParent && row.metricId === dataA.metricId)
         const parentB = gridData.find((row) => row.isParent && row.metricId === dataB.metricId)
         if (parentA && parentB) {
+          let parentAValue = parentA[fieldName]
+          let parentBValue = parentB[fieldName]
+
+          if (fieldName === "serviceAlignment") {
+            parentAValue = parentA.serviceAlignment
+            parentBValue = parentB.serviceAlignment
+          }
+
           return customSortComparator(
-            parentA[nodeA.field],
-            parentB[nodeB.field],
-            { data: parentA },
-            { data: parentB },
+            parentAValue,
+            parentBValue,
+            { data: parentA, colDef: nodeA.colDef },
+            { data: parentB, colDef: nodeB.colDef },
             isDescending,
           )
         }
@@ -490,7 +518,10 @@ const MetricsGrid = ({ selectedMonth, selectedLeader, metricTypeId }: MetricsGri
         },
         flex: 2,
         filter: "agTextColumnFilter",
-        pinned: "left", // Pin this column to the left
+        pinned: "left",
+        // Ensure this column uses the custom comparator and sorts by serviceAlignment field
+        comparator: customSortComparator,
+        sortable: true,
       },
       {
         headerName: "Metric",
