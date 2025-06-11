@@ -3,24 +3,55 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckCircle2, Clock, Download, FileText, Filter, RefreshCw, Search, X } from "lucide-react"
+import {
+  CheckCircle2,
+  Clock,
+  Download,
+  FileText,
+  Filter,
+  RefreshCw,
+  Search,
+  X,
+  Edit,
+  Save,
+  MoreHorizontal,
+  Eye,
+  AlertCircle,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import type { JSX } from "react"
+
+// Types
+interface OnboardingRecord {
+  id: string
+  controlPartner: string
+  status: {
+    label: "Approved" | "Pending" | "Rejected" | "Not Applicable"
+    color: string
+    icon: JSX.Element
+  }
+  actionedBy: string
+  actionedDate: string
+  comments: string
+}
 
 // Generate random data
-const generateRandomData = () => {
+const generateRandomData = (): OnboardingRecord[] => {
   const controlPartners = [
     "Business Management",
     "Incident Management",
@@ -37,10 +68,18 @@ const generateRandomData = () => {
   ]
 
   const statuses = [
-    { label: "Approved", color: "bg-green-100 text-green-800", icon: <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> },
-    { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: <Clock className="h-3.5 w-3.5 mr-1" /> },
-    { label: "In Review", color: "bg-blue-100 text-blue-800", icon: <FileText className="h-3.5 w-3.5 mr-1" /> },
-    { label: "Rejected", color: "bg-red-100 text-red-800", icon: <X className="h-3.5 w-3.5 mr-1" /> },
+    {
+      label: "Approved" as const,
+      color: "bg-green-100 text-green-800",
+      icon: <CheckCircle2 className="h-3.5 w-3.5 mr-1" />,
+    },
+    { label: "Pending" as const, color: "bg-yellow-100 text-yellow-800", icon: <Clock className="h-3.5 w-3.5 mr-1" /> },
+    { label: "Rejected" as const, color: "bg-red-100 text-red-800", icon: <X className="h-3.5 w-3.5 mr-1" /> },
+    {
+      label: "Not Applicable" as const,
+      color: "bg-gray-100 text-gray-800",
+      icon: <FileText className="h-3.5 w-3.5 mr-1" />,
+    },
   ]
 
   const firstNames = [
@@ -122,21 +161,173 @@ const generateRandomData = () => {
 }
 
 export default function OnboardingPage() {
-  const [data, setData] = useState(generateRandomData())
+  const [data, setData] = useState<OnboardingRecord[]>(generateRandomData())
+  const [originalData, setOriginalData] = useState<OnboardingRecord[]>([])
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "ascending" | "descending" } | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingRows, setEditingRows] = useState<Set<string>>(new Set())
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Status options for editing
+  const statusOptions = [
+    {
+      value: "Approved",
+      label: "Approved",
+      color: "bg-green-100 text-green-800",
+      icon: <CheckCircle2 className="h-3.5 w-3.5 mr-1" />,
+    },
+    {
+      value: "Pending",
+      label: "Pending",
+      color: "bg-yellow-100 text-yellow-800",
+      icon: <Clock className="h-3.5 w-3.5 mr-1" />,
+    },
+    {
+      value: "Rejected",
+      label: "Rejected",
+      color: "bg-red-100 text-red-800",
+      icon: <X className="h-3.5 w-3.5 mr-1" />,
+    },
+    {
+      value: "Not Applicable",
+      label: "Not Applicable",
+      color: "bg-gray-100 text-gray-800",
+      icon: <FileText className="h-3.5 w-3.5 mr-1" />,
+    },
+  ]
 
   // Count by status
   const statusCounts = {
     total: data.length,
     approved: data.filter((item) => item.status.label === "Approved").length,
     pending: data.filter((item) => item.status.label === "Pending").length,
-    inReview: data.filter((item) => item.status.label === "In Review").length,
     rejected: data.filter((item) => item.status.label === "Rejected").length,
+    notApplicable: data.filter((item) => item.status.label === "Not Applicable").length,
+  }
+
+  // Handle edit mode toggle
+  const handleEditToggle = () => {
+    if (isEditMode && hasUnsavedChanges) {
+      const confirmDiscard = window.confirm("You have unsaved changes. Are you sure you want to discard them?")
+      if (!confirmDiscard) return
+    }
+
+    if (!isEditMode) {
+      setOriginalData([...data])
+      setIsEditMode(true)
+    } else {
+      setData([...originalData])
+      setIsEditMode(false)
+      setEditingRows(new Set())
+      setHasUnsavedChanges(false)
+      setValidationErrors({})
+    }
+  }
+
+  // Handle save changes
+  const handleSave = () => {
+    // Validate all fields before saving
+    const errors: Record<string, string> = {}
+
+    // Check if any comments are empty
+    data.forEach((item) => {
+      if (item.comments.trim() === "") {
+        errors[`comments-${item.id}`] = "Comments cannot be empty"
+      }
+    })
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+
+    setIsEditMode(false)
+    setEditingRows(new Set())
+    setHasUnsavedChanges(false)
+    setValidationErrors({})
+    setOriginalData([])
+
+    // Here you would typically save to backend
+    console.log("Saving changes:", data)
+
+    // Show success message (in real app, this would be a toast notification)
+    alert("Onboarding configuration saved successfully!")
+  }
+
+  // Handle row editing
+  const handleEditRow = (id: string) => {
+    setEditingRows((prev) => new Set([...prev, id]))
+  }
+
+  // Handle save single row
+  const handleSaveRow = (id: string) => {
+    // Validate the row before saving
+    const item = data.find((item) => item.id === id)
+    if (item && item.comments.trim() === "") {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [`comments-${id}`]: "Comments cannot be empty",
+      }))
+      return
+    }
+
+    setEditingRows((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(id)
+      return newSet
+    })
+
+    // Clear validation error if it exists
+    if (validationErrors[`comments-${id}`]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[`comments-${id}`]
+        return newErrors
+      })
+    }
+  }
+
+  // Handle status change
+  const handleStatusChange = (id: string, newStatus: string) => {
+    const statusOption = statusOptions.find((s) => s.value === newStatus)
+    if (!statusOption) return
+
+    setData((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              status: {
+                label: statusOption.value as OnboardingRecord["status"]["label"],
+                color: statusOption.color,
+                icon: statusOption.icon,
+              },
+            }
+          : item,
+      ),
+    )
+    setHasUnsavedChanges(true)
+  }
+
+  // Handle comments change
+  const handleCommentsChange = (id: string, newComments: string) => {
+    setData((prev) => prev.map((item) => (item.id === id ? { ...item, comments: newComments } : item)))
+    setHasUnsavedChanges(true)
+
+    // Clear validation error if comment is not empty
+    if (newComments.trim() !== "" && validationErrors[`comments-${id}`]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[`comments-${id}`]
+        return newErrors
+      })
+    }
   }
 
   // Handle row selection
@@ -212,432 +403,544 @@ export default function OnboardingPage() {
 
   // Refresh data
   const refreshData = () => {
+    if (isEditMode && hasUnsavedChanges) {
+      const confirmDiscard = window.confirm("You have unsaved changes. Are you sure you want to refresh the data?")
+      if (!confirmDiscard) return
+    }
+
     setData(generateRandomData())
     setSelectedRows([])
     setCurrentPage(1)
+    setIsEditMode(false)
+    setEditingRows(new Set())
+    setHasUnsavedChanges(false)
+    setOriginalData([])
+    setValidationErrors({})
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <FileText className="h-5 w-5 text-gray-500 mr-2" />
-              <span className="text-2xl font-bold">{statusCounts.total}</span>
+    <div className="w-full">
+      {/* Ultra-wide responsive container */}
+      <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto p-4 lg:p-6 xl:p-8">
+        {/* Panel Header */}
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6 gap-4">
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Onboarding</h2>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-xs lg:text-sm",
+                    isEditMode ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800",
+                  )}
+                >
+                  {isEditMode ? "Edit Mode" : "View Mode"}
+                </Badge>
+              </div>
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+                Manage control partner onboarding status and approvals
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Approved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-              <span className="text-2xl font-bold text-green-600">{statusCounts.approved}</span>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 mb-4 lg:mb-6">
+            {!isEditMode ? (
+              <Button onClick={handleEditToggle} className="flex items-center space-x-2 h-9 lg:h-10">
+                <Edit className="h-4 w-4" />
+                <span>Edit Configuration</span>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleSave}
+                  className="flex items-center space-x-2 h-9 lg:h-10 bg-green-600 hover:bg-green-700"
+                  disabled={!hasUnsavedChanges || Object.keys(validationErrors).length > 0}
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Save Changes</span>
+                </Button>
+                <Button
+                  onClick={handleEditToggle}
+                  variant="outline"
+                  className="flex items-center space-x-2 h-9 lg:h-10"
+                >
+                  <X className="h-4 w-4" />
+                  <span>Cancel</span>
+                </Button>
+              </>
+            )}
+            <Button variant="outline" className="flex items-center space-x-2 h-9 lg:h-10">
+              <Eye className="h-4 w-4" />
+              <span>View History</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 h-9 lg:h-10 ml-auto"
+              onClick={refreshData}
+              disabled={isEditMode && hasUnsavedChanges}
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Refresh</span>
+            </Button>
+            <Button variant="outline" className="flex items-center space-x-2 h-9 lg:h-10" disabled={isEditMode}>
+              <Download className="h-4 w-4" />
+              <span>Export</span>
+            </Button>
+          </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 text-yellow-500 mr-2" />
-              <span className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</span>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Validation Errors Alert */}
+          {Object.keys(validationErrors).length > 0 && (
+            <Alert className="mb-4 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                Please correct the validation errors before saving.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">In Review</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <FileText className="h-5 w-5 text-blue-500 mr-2" />
-              <span className="text-2xl font-bold text-blue-600">{statusCounts.inReview}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Records</p>
+                <p className="text-2xl font-bold">{statusCounts.total}</p>
+              </div>
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <FileText className="h-5 w-5 text-gray-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Rejected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <X className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-2xl font-bold text-red-600">{statusCounts.rejected}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Approved</p>
+                <p className="text-2xl font-bold text-green-600">{statusCounts.approved}</p>
+              </div>
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Filters and Actions */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</p>
+              </div>
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Rejected</p>
+                <p className="text-2xl font-bold text-red-600">{statusCounts.rejected}</p>
+              </div>
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="h-5 w-5 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Not Applicable</p>
+                <p className="text-2xl font-bold text-gray-600">{statusCounts.notApplicable}</p>
+              </div>
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <FileText className="h-5 w-5 text-gray-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
+        <Card className="shadow-sm mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="relative flex-grow max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  type="text"
                   placeholder="Search control partners, users, or comments..."
-                  className="pl-9 w-full sm:w-80"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)
                     setCurrentPage(1)
                   }}
+                  className="pl-10 h-10"
+                  disabled={isEditMode}
                 />
               </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center">
-                    <Filter className="h-4 w-4 mr-1" />
-                    Status Filter
-                    {statusFilter.length > 0 && (
-                      <Badge className="ml-1 bg-blue-100 text-blue-800 hover:bg-blue-100">{statusFilter.length}</Badge>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-approved"
-                          checked={statusFilter.includes("Approved")}
-                          onCheckedChange={() => toggleStatusFilter("Approved")}
-                        />
-                        <label htmlFor="filter-approved" className="text-sm flex items-center cursor-pointer">
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-green-600" />
-                          Approved
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-pending"
-                          checked={statusFilter.includes("Pending")}
-                          onCheckedChange={() => toggleStatusFilter("Pending")}
-                        />
-                        <label htmlFor="filter-pending" className="text-sm flex items-center cursor-pointer">
-                          <Clock className="h-3.5 w-3.5 mr-1 text-yellow-600" />
-                          Pending
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-in-review"
-                          checked={statusFilter.includes("In Review")}
-                          onCheckedChange={() => toggleStatusFilter("In Review")}
-                        />
-                        <label htmlFor="filter-in-review" className="text-sm flex items-center cursor-pointer">
-                          <FileText className="h-3.5 w-3.5 mr-1 text-blue-600" />
-                          In Review
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-rejected"
-                          checked={statusFilter.includes("Rejected")}
-                          onCheckedChange={() => toggleStatusFilter("Rejected")}
-                        />
-                        <label htmlFor="filter-rejected" className="text-sm flex items-center cursor-pointer">
-                          <X className="h-3.5 w-3.5 mr-1 text-red-600" />
-                          Rejected
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={resetFilters} className="justify-center">
-                    <Button variant="ghost" size="sm" className="w-full">
-                      Reset Filters
-                    </Button>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="flex gap-2">
-              {selectedRows.length > 0 && (
-                <Button variant="outline" size="sm">
-                  Bulk Action ({selectedRows.length})
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={refreshData}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-            </div>
-          </div>
-
-          {/* Active filters */}
-          {statusFilter.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {statusFilter.map((status) => (
-                <Badge key={status} variant="secondary" className="bg-gray-100 text-gray-800 flex items-center gap-1">
-                  Status: {status}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => toggleStatusFilter(status)} />
-                </Badge>
-              ))}
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={resetFilters}>
-                Clear all filters
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox
-                    checked={paginatedData.length > 0 && selectedRows.length === paginatedData.length}
-                    onCheckedChange={toggleSelectAll}
-                    aria-label="Select all"
-                  />
-                </TableHead>
-                <TableHead className="cursor-pointer min-w-[200px]" onClick={() => requestSort("controlPartner")}>
-                  <div className="flex items-center">
-                    Control Partner
-                    {sortConfig?.key === "controlPartner" && (
-                      <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer min-w-[120px]" onClick={() => requestSort("status")}>
-                  <div className="flex items-center">
-                    Status
-                    {sortConfig?.key === "status" && (
-                      <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer min-w-[150px]" onClick={() => requestSort("actionedBy")}>
-                  <div className="flex items-center">
-                    Actioned By
-                    {sortConfig?.key === "actionedBy" && (
-                      <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer min-w-[120px]" onClick={() => requestSort("actionedDate")}>
-                  <div className="flex items-center">
-                    Actioned Date
-                    {sortConfig?.key === "actionedDate" && (
-                      <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[300px]">Comments</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((item) => (
-                  <TableRow
-                    key={item.id}
-                    className={`${selectedRows.includes(item.id) ? "bg-blue-50" : ""} hover:bg-gray-50 cursor-pointer`}
-                    onClick={() => toggleRowSelection(item.id)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedRows.includes(item.id)}
-                        onCheckedChange={() => toggleRowSelection(item.id)}
-                        aria-label={`Select ${item.controlPartner}`}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{item.controlPartner}</TableCell>
-                    <TableCell>
-                      <Badge className={`flex items-center w-fit ${item.status.color}`}>
-                        {item.status.icon}
-                        {item.status.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{item.actionedBy}</TableCell>
-                    <TableCell className="text-sm">{item.actionedDate}</TableCell>
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block max-w-[300px] truncate text-sm text-gray-600">{item.comments}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">{item.comments}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      <FileText className="h-8 w-8 mb-2" />
-                      <p className="text-sm">No records found matching your criteria</p>
-                      {(searchQuery || statusFilter.length > 0) && (
-                        <Button variant="link" size="sm" onClick={resetFilters} className="mt-1">
-                          Clear filters to see all records
-                        </Button>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2" disabled={isEditMode}>
+                      <Filter className="h-4 w-4" />
+                      <span>Status Filter</span>
+                      {statusFilter.length > 0 && (
+                        <Badge className="ml-1 bg-blue-100 text-blue-800">{statusFilter.length}</Badge>
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {statusOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          toggleStatusFilter(option.value)
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Checkbox
+                          checked={statusFilter.includes(option.value)}
+                          onCheckedChange={() => toggleStatusFilter(option.value)}
+                          id={`filter-${option.value.toLowerCase()}`}
+                        />
+                        <div className={`flex items-center ${option.color} px-2 py-1 rounded text-xs`}>
+                          {option.icon}
+                          {option.label}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={resetFilters}>Reset Filters</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {selectedRows.length > 0 && !isEditMode && (
+                  <Button variant="outline" size="sm">
+                    Bulk Action ({selectedRows.length})
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Active filters */}
+            {statusFilter.length > 0 && !isEditMode && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {statusFilter.map((status) => (
+                  <Badge key={status} variant="secondary" className="bg-gray-100 text-gray-800 flex items-center gap-1">
+                    Status: {status}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => toggleStatusFilter(status)} />
+                  </Badge>
+                ))}
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={resetFilters}>
+                  Clear all filters
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Data Table */}
+        <Card className="shadow-lg">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={paginatedData.length > 0 && selectedRows.length === paginatedData.length}
+                        onCheckedChange={toggleSelectAll}
+                        disabled={isEditMode}
+                      />
+                    </TableHead>
+                    <TableHead className="min-w-[200px]">
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => !isEditMode && requestSort("controlPartner")}
+                        disabled={isEditMode}
+                      >
+                        Control Partner
+                        {sortConfig?.key === "controlPartner" && (
+                          <span className="ml-2">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[120px]">
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => !isEditMode && requestSort("status")}
+                        disabled={isEditMode}
+                      >
+                        Status
+                        {sortConfig?.key === "status" && (
+                          <span className="ml-2">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[150px]">
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => !isEditMode && requestSort("actionedBy")}
+                        disabled={isEditMode}
+                      >
+                        Actioned By
+                        {sortConfig?.key === "actionedBy" && (
+                          <span className="ml-2">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[120px]">
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => !isEditMode && requestSort("actionedDate")}
+                        disabled={isEditMode}
+                      >
+                        Actioned Date
+                        {sortConfig?.key === "actionedDate" && (
+                          <span className="ml-2">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[250px]">Comments</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((item) => {
+                      const isEditing = editingRows.has(item.id)
+                      return (
+                        <TableRow
+                          key={item.id}
+                          className={cn(
+                            selectedRows.includes(item.id) && "bg-blue-50",
+                            isEditing && "bg-yellow-50 border-yellow-200",
+                            !isEditMode && "hover:bg-gray-50",
+                          )}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedRows.includes(item.id)}
+                              onCheckedChange={() => !isEditMode && toggleRowSelection(item.id)}
+                              disabled={isEditMode}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{item.controlPartner}</TableCell>
+                          <TableCell>
+                            {isEditing ? (
+                              <Select
+                                value={item.status.label}
+                                onValueChange={(value) => handleStatusChange(item.id, value)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {statusOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      <div className="flex items-center">
+                                        {option.icon}
+                                        {option.label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge className={`flex items-center w-fit ${item.status.color}`}>
+                                {item.status.icon}
+                                {item.status.label}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{item.actionedBy}</TableCell>
+                          <TableCell>{item.actionedDate}</TableCell>
+                          <TableCell>
+                            {isEditing ? (
+                              <div>
+                                <Textarea
+                                  value={item.comments}
+                                  onChange={(e) => handleCommentsChange(item.id, e.target.value)}
+                                  className={cn(
+                                    "min-h-[60px] resize-none",
+                                    validationErrors[`comments-${item.id}`] && "border-red-300",
+                                  )}
+                                  placeholder="Enter comments..."
+                                />
+                                {validationErrors[`comments-${item.id}`] && (
+                                  <p className="text-xs text-red-600 mt-1">{validationErrors[`comments-${item.id}`]}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="block max-w-[250px] truncate text-sm text-gray-600">
+                                      {item.comments}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">{item.comments}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {isEditMode ? (
+                              isEditing ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSaveRow(item.id)}
+                                  className="h-8 w-8 p-0"
+                                  disabled={!!validationErrors[`comments-${item.id}`]}
+                                >
+                                  <Save className="h-4 w-4 text-green-600" />
+                                  <span className="sr-only">Save changes</span>
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditRow(item.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4 text-blue-600" />
+                                  <span className="sr-only">Edit row</span>
+                                </Button>
+                              )
+                            ) : (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>View Details</DropdownMenuItem>
+                                  <DropdownMenuItem>Add Comment</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem>Export Record</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        <div className="flex flex-col items-center justify-center text-gray-500">
+                          <FileText className="h-8 w-8 mb-2" />
+                          <p className="text-sm">No records found matching your criteria</p>
+                          {(searchQuery || statusFilter.length > 0) && !isEditMode && (
+                            <Button variant="link" size="sm" onClick={resetFilters} className="mt-1">
+                              Clear filters to see all records
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-          <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Show</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => {
+                setPageSize(Number(value))
+                setCurrentPage(1)
+              }}
+              disabled={isEditMode}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-600">entries</span>
+          </div>
+
+          <div className="text-sm text-gray-600">
+            Showing {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} to{" "}
+            {Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length} entries
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1 || isEditMode}
             >
               Previous
             </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNumber = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
+                return (
+                  <Button
+                    key={pageNumber}
+                    variant={currentPage === pageNumber ? "default" : "outline"}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={() => setCurrentPage(pageNumber)}
+                    disabled={isEditMode}
+                  >
+                    {pageNumber}
+                  </Button>
+                )
+              })}
+            </div>
+
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages || isEditMode}
             >
               Next
             </Button>
           </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing{" "}
-                <span className="font-medium">{Math.min((currentPage - 1) * pageSize + 1, filteredData.length)}</span>{" "}
-                to <span className="font-medium">{Math.min(currentPage * pageSize, filteredData.length)}</span> of{" "}
-                <span className="font-medium">{filteredData.length}</span> results
-              </p>
-            </div>
+        </div>
+
+        {/* Unsaved Changes Warning */}
+        {hasUnsavedChanges && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center space-x-2">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value))
-                  setCurrentPage(1)
-                }}
-              >
-                <SelectTrigger className="w-[70px]">
-                  <SelectValue placeholder="10" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  className="rounded-r-none border-r-0"
-                >
-                  <span className="sr-only">First page</span>
-                  <span aria-hidden="true">«</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="rounded-none"
-                >
-                  <span className="sr-only">Previous page</span>
-                  <span aria-hidden="true">‹</span>
-                </Button>
-
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  // Calculate page numbers to show around current page
-                  let pageNum
-                  if (totalPages <= 5) {
-                    pageNum = i + 1
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i
-                  } else {
-                    pageNum = currentPage - 2 + i
-                  }
-
-                  return (
-                    <Button
-                      key={i}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="rounded-none"
-                    >
-                      {pageNum}
-                    </Button>
-                  )
-                })}
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="rounded-none"
-                >
-                  <span className="sr-only">Next page</span>
-                  <span aria-hidden="true">›</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="rounded-l-none border-l-0"
-                />
+              <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">!</span>
               </div>
+              <span className="text-yellow-800 text-sm">
+                You have unsaved changes. Remember to save before leaving.
+              </span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
