@@ -43,18 +43,6 @@ const generateRandomData = () => {
     { label: "Rejected", color: "bg-red-100 text-red-800", icon: <X className="h-3.5 w-3.5 mr-1" /> },
   ]
 
-  const priorities = [
-    { label: "High", color: "bg-red-100 text-red-800" },
-    { label: "Medium", color: "bg-yellow-100 text-yellow-800" },
-    { label: "Low", color: "bg-green-100 text-green-800" },
-  ]
-
-  const categories = [
-    { label: "Technical", color: "bg-purple-100 text-purple-800" },
-    { label: "Process", color: "bg-blue-100 text-blue-800" },
-    { label: "Governance", color: "bg-indigo-100 text-indigo-800" },
-  ]
-
   const firstNames = [
     "Alex",
     "Jordan",
@@ -130,8 +118,6 @@ const generateRandomData = () => {
     actionedBy: generateRandomName(),
     actionedDate: generateRandomDate(),
     comments: comments[Math.floor(Math.random() * comments.length)],
-    priority: priorities[Math.floor(Math.random() * priorities.length)],
-    category: categories[Math.floor(Math.random() * categories.length)],
   }))
 }
 
@@ -140,8 +126,6 @@ export default function OnboardingPage() {
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [priorityFilter, setPriorityFilter] = useState<string[]>([])
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "ascending" | "descending" } | null>(null)
@@ -206,13 +190,7 @@ export default function OnboardingPage() {
     // Status filter
     const matchesStatus = statusFilter.length === 0 || statusFilter.includes(item.status.label)
 
-    // Priority filter
-    const matchesPriority = priorityFilter.length === 0 || priorityFilter.includes(item.priority.label)
-
-    // Category filter
-    const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(item.category.label)
-
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory
+    return matchesSearch && matchesStatus
   })
 
   // Pagination
@@ -225,24 +203,10 @@ export default function OnboardingPage() {
     setCurrentPage(1)
   }
 
-  // Handle priority filter toggle
-  const togglePriorityFilter = (priority: string) => {
-    setPriorityFilter((prev) => (prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority]))
-    setCurrentPage(1)
-  }
-
-  // Handle category filter toggle
-  const toggleCategoryFilter = (category: string) => {
-    setCategoryFilter((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]))
-    setCurrentPage(1)
-  }
-
   // Reset filters
   const resetFilters = () => {
     setSearchQuery("")
     setStatusFilter([])
-    setPriorityFilter([])
-    setCategoryFilter([])
     setCurrentPage(1)
   }
 
@@ -327,8 +291,8 @@ export default function OnboardingPage() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   type="text"
-                  placeholder="Search..."
-                  className="pl-9 w-full sm:w-64"
+                  placeholder="Search control partners, users, or comments..."
+                  className="pl-9 w-full sm:w-80"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)
@@ -341,11 +305,9 @@ export default function OnboardingPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center">
                     <Filter className="h-4 w-4 mr-1" />
-                    Filters
-                    {(statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter.length > 0) && (
-                      <Badge className="ml-1 bg-blue-100 text-blue-800 hover:bg-blue-100">
-                        {statusFilter.length + priorityFilter.length + categoryFilter.length}
-                      </Badge>
+                    Status Filter
+                    {statusFilter.length > 0 && (
+                      <Badge className="ml-1 bg-blue-100 text-blue-800 hover:bg-blue-100">{statusFilter.length}</Badge>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
@@ -413,96 +375,6 @@ export default function OnboardingPage() {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Filter by Priority</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-high"
-                          checked={priorityFilter.includes("High")}
-                          onCheckedChange={() => togglePriorityFilter("High")}
-                        />
-                        <label htmlFor="filter-high" className="text-sm cursor-pointer">
-                          High
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-medium"
-                          checked={priorityFilter.includes("Medium")}
-                          onCheckedChange={() => togglePriorityFilter("Medium")}
-                        />
-                        <label htmlFor="filter-medium" className="text-sm cursor-pointer">
-                          Medium
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-low"
-                          checked={priorityFilter.includes("Low")}
-                          onCheckedChange={() => togglePriorityFilter("Low")}
-                        />
-                        <label htmlFor="filter-low" className="text-sm cursor-pointer">
-                          Low
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-technical"
-                          checked={categoryFilter.includes("Technical")}
-                          onCheckedChange={() => toggleCategoryFilter("Technical")}
-                        />
-                        <label htmlFor="filter-technical" className="text-sm cursor-pointer">
-                          Technical
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-process"
-                          checked={categoryFilter.includes("Process")}
-                          onCheckedChange={() => toggleCategoryFilter("Process")}
-                        />
-                        <label htmlFor="filter-process" className="text-sm cursor-pointer">
-                          Process
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                    <div className="px-2 py-1.5 w-full">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="filter-governance"
-                          checked={categoryFilter.includes("Governance")}
-                          onCheckedChange={() => toggleCategoryFilter("Governance")}
-                        />
-                        <label htmlFor="filter-governance" className="text-sm cursor-pointer">
-                          Governance
-                        </label>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={resetFilters} className="justify-center">
                     <Button variant="ghost" size="sm" className="w-full">
                       Reset Filters
@@ -530,31 +402,17 @@ export default function OnboardingPage() {
           </div>
 
           {/* Active filters */}
-          {(statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter.length > 0) && (
+          {statusFilter.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {statusFilter.map((status) => (
                 <Badge key={status} variant="secondary" className="bg-gray-100 text-gray-800 flex items-center gap-1">
-                  {status}
+                  Status: {status}
                   <X className="h-3 w-3 cursor-pointer" onClick={() => toggleStatusFilter(status)} />
                 </Badge>
               ))}
-              {priorityFilter.map((priority) => (
-                <Badge key={priority} variant="secondary" className="bg-gray-100 text-gray-800 flex items-center gap-1">
-                  {priority} Priority
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => togglePriorityFilter(priority)} />
-                </Badge>
-              ))}
-              {categoryFilter.map((category) => (
-                <Badge key={category} variant="secondary" className="bg-gray-100 text-gray-800 flex items-center gap-1">
-                  {category}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => toggleCategoryFilter(category)} />
-                </Badge>
-              ))}
-              {(statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter.length > 0) && (
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={resetFilters}>
-                  Clear all
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={resetFilters}>
+                Clear all filters
+              </Button>
             </div>
           )}
         </div>
@@ -571,7 +429,7 @@ export default function OnboardingPage() {
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort("controlPartner")}>
+                <TableHead className="cursor-pointer min-w-[200px]" onClick={() => requestSort("controlPartner")}>
                   <div className="flex items-center">
                     Control Partner
                     {sortConfig?.key === "controlPartner" && (
@@ -579,7 +437,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort("status")}>
+                <TableHead className="cursor-pointer min-w-[120px]" onClick={() => requestSort("status")}>
                   <div className="flex items-center">
                     Status
                     {sortConfig?.key === "status" && (
@@ -587,9 +445,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort("actionedBy")}>
+                <TableHead className="cursor-pointer min-w-[150px]" onClick={() => requestSort("actionedBy")}>
                   <div className="flex items-center">
                     Actioned By
                     {sortConfig?.key === "actionedBy" && (
@@ -597,7 +453,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort("actionedDate")}>
+                <TableHead className="cursor-pointer min-w-[120px]" onClick={() => requestSort("actionedDate")}>
                   <div className="flex items-center">
                     Actioned Date
                     {sortConfig?.key === "actionedDate" && (
@@ -605,7 +461,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead>Comments</TableHead>
+                <TableHead className="min-w-[250px]">Comments</TableHead>
                 <TableHead className="w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -627,19 +483,13 @@ export default function OnboardingPage() {
                         {item.status.label}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge className={`w-fit ${item.priority.color}`}>{item.priority.label}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`w-fit ${item.category.color}`}>{item.category.label}</Badge>
-                    </TableCell>
-                    <TableCell>{item.actionedBy}</TableCell>
-                    <TableCell>{item.actionedDate}</TableCell>
+                    <TableCell className="text-sm">{item.actionedBy}</TableCell>
+                    <TableCell className="text-sm">{item.actionedDate}</TableCell>
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="block max-w-[200px] truncate">{item.comments}</span>
+                            <span className="block max-w-[250px] truncate text-sm text-gray-600">{item.comments}</span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="max-w-xs">{item.comments}</p>
@@ -652,7 +502,7 @@ export default function OnboardingPage() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">Open menu for {item.controlPartner}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -668,8 +518,16 @@ export default function OnboardingPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
-                    No results found.
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-500">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p className="text-sm">No records found matching your criteria</p>
+                      {(searchQuery || statusFilter.length > 0) && (
+                        <Button variant="link" size="sm" onClick={resetFilters} className="mt-1">
+                          Clear filters to see all records
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
