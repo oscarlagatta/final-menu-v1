@@ -7,17 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Search,
   Filter,
   Download,
   RefreshCw,
   Eye,
-  User,
   FileText,
   Activity,
-  Clock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -36,7 +33,7 @@ const auditLogData = [
     userName: "J. Anderson",
     action: "UPDATE",
     module: "Onboarding",
-    fieldName: "Status",
+    fieldName: "Lob",
     resourceName: "Control Partner Alpha",
     previousValue: "Pending",
     updatedValue: "Approved",
@@ -51,7 +48,7 @@ const auditLogData = [
     userName: "M. Chen",
     action: "CREATE",
     module: "Resource Alignment",
-    fieldName: "Allocation",
+    fieldName: "Organization",
     resourceName: "Project Beta",
     previousValue: null,
     updatedValue: "5",
@@ -66,7 +63,7 @@ const auditLogData = [
     userName: "R. Johnson",
     action: "DELETE",
     module: "Service Alignment",
-    fieldName: "Service Function",
+    fieldName: "NextAttestationDueDate",
     resourceName: "Function Gamma",
     previousValue: "Active",
     updatedValue: null,
@@ -81,7 +78,7 @@ const auditLogData = [
     userName: "J. Anderson",
     action: "UPDATE",
     module: "Onboarding",
-    fieldName: "Comments",
+    fieldName: "AttestationUserId",
     resourceName: "Control Partner Delta",
     previousValue: "Initial review pending",
     updatedValue: "Documentation verified and approved",
@@ -161,14 +158,13 @@ const modules = [
   "Additional Details",
 ]
 
-type SortField = "timestamp" | "userName" | "action" | "module" | "fieldName"
+type SortField = "timestamp" | "userName" | "action" | "fieldName"
 type SortDirection = "asc" | "desc"
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedAction, setSelectedAction] = useState("All Actions")
   const [selectedModule, setSelectedModule] = useState("All Modules")
-  const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sortField, setSortField] = useState<SortField>("timestamp")
@@ -277,11 +273,16 @@ export default function AuditLogs() {
     {} as Record<string, number>,
   )
 
-  const activeFiltersCount = [
-    searchTerm !== "",
-    selectedAction !== "All Actions",
-    selectedModule !== "All Modules",
-  ].filter(Boolean).length
+  // Ensure all action types have default values
+  const defaultActionCounts = {
+    CREATE: 0,
+    UPDATE: 0,
+    DELETE: 0,
+    VIEW: 0,
+    ...actionCounts,
+  }
+
+  const activeFiltersCount = [searchTerm !== "", selectedAction !== "All Actions"].filter(Boolean).length
 
   return (
     <div className="space-y-6">
@@ -330,7 +331,7 @@ export default function AuditLogs() {
             <FileText className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{actionCounts.CREATE || 0}</div>
+            <div className="text-2xl font-bold text-green-600">{defaultActionCounts.CREATE}</div>
             <p className="text-xs text-muted-foreground">New records</p>
           </CardContent>
         </Card>
@@ -340,7 +341,7 @@ export default function AuditLogs() {
             <RefreshCw className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{actionCounts.UPDATE || 0}</div>
+            <div className="text-2xl font-bold text-blue-600">{defaultActionCounts.UPDATE}</div>
             <p className="text-xs text-muted-foreground">Modified records</p>
           </CardContent>
         </Card>
@@ -350,7 +351,7 @@ export default function AuditLogs() {
             <FileText className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{actionCounts.DELETE || 0}</div>
+            <div className="text-2xl font-bold text-red-600">{defaultActionCounts.DELETE}</div>
             <p className="text-xs text-muted-foreground">Removed records</p>
           </CardContent>
         </Card>
@@ -360,7 +361,7 @@ export default function AuditLogs() {
             <Eye className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{actionCounts.VIEW || 0}</div>
+            <div className="text-2xl font-bold text-gray-600">{defaultActionCounts.VIEW}</div>
             <p className="text-xs text-muted-foreground">Access logs</p>
           </CardContent>
         </Card>
@@ -404,19 +405,6 @@ export default function AuditLogs() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedModule} onValueChange={setSelectedModule}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {modules.map((module) => (
-                  <SelectItem key={module} value={module}>
-                    {module}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-2 mt-4">
@@ -440,24 +428,12 @@ export default function AuditLogs() {
                   </button>
                 </Badge>
               )}
-              {selectedModule !== "All Modules" && (
-                <Badge variant="outline" className="gap-1">
-                  Module: {selectedModule}
-                  <button
-                    onClick={() => setSelectedModule("All Modules")}
-                    className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSearchTerm("")
                   setSelectedAction("All Actions")
-                  setSelectedModule("All Modules")
                 }}
                 className="text-xs"
               >
@@ -478,130 +454,35 @@ export default function AuditLogs() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedRows(paginatedData.map((log) => log.id))
-                        } else {
-                          setSelectedRows([])
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium"
-                      onClick={() => handleSort("timestamp")}
-                    >
-                      Timestamp
-                      {getSortIcon("timestamp")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium"
-                      onClick={() => handleSort("userName")}
-                    >
-                      User
-                      {getSortIcon("userName")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium"
-                      onClick={() => handleSort("action")}
-                    >
-                      Action
-                      {getSortIcon("action")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium"
-                      onClick={() => handleSort("module")}
-                    >
-                      Module
-                      {getSortIcon("module")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium"
-                      onClick={() => handleSort("fieldName")}
-                    >
-                      Field
-                      {getSortIcon("fieldName")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Previous Value</TableHead>
+                  <TableHead>Field Name</TableHead>
+                  <TableHead>Resource Name</TableHead>
                   <TableHead>Updated Value</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>Previous Value</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Who</TableHead>
+                  <TableHead>When</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.map((log) => (
                   <TableRow key={log.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedRows.includes(log.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedRows([...selectedRows, log.id])
-                          } else {
-                            setSelectedRows(selectedRows.filter((id) => id !== log.id))
-                          }
-                        }}
-                      />
+                    <TableCell className="font-medium">{log.fieldName}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={log.resourceName}>
+                      {log.resourceName}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        {formatTimestamp(log.timestamp)}
-                      </div>
+                    <TableCell className="max-w-[150px] truncate" title={log.updatedValue || "N/A"}>
+                      {log.updatedValue || <span className="text-gray-400">N/A</span>}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium">{log.userName}</div>
-                          <div className="text-xs text-gray-500">{log.userId}</div>
-                        </div>
-                      </div>
+                    <TableCell className="max-w-[150px] truncate" title={log.previousValue || "N/A"}>
+                      {log.previousValue || <span className="text-gray-400">N/A</span>}
                     </TableCell>
                     <TableCell>
                       <Badge className={getActionBadgeColor(log.action)}>{log.action}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getModuleBadgeColor(log.module)}>
-                        {log.module}
-                      </Badge>
+                      <div className="font-medium">{log.userName}</div>
                     </TableCell>
-                    <TableCell className="font-medium">{log.fieldName}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={log.resourceName}>
-                      {log.resourceName}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={log.previousValue || "N/A"}>
-                      {log.previousValue || <span className="text-gray-400">N/A</span>}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={log.updatedValue || "N/A"}>
-                      {log.updatedValue || <span className="text-gray-400">N/A</span>}
-                    </TableCell>
-                    <TableCell className="max-w-[250px] truncate" title={log.description}>
-                      {log.description}
-                    </TableCell>
+                    <TableCell className="font-mono text-sm">{formatTimestamp(log.timestamp)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -675,11 +556,6 @@ export default function AuditLogs() {
           <div className="text-xs text-gray-500 mt-2">
             Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredData.length)} of {filteredData.length}{" "}
             entries
-            {selectedRows.length > 0 && (
-              <span className="ml-4">
-                {selectedRows.length} row{selectedRows.length !== 1 ? "s" : ""} selected
-              </span>
-            )}
           </div>
         </CardContent>
       </Card>
