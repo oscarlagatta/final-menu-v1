@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckCircle2, Clock, Download, FileText, Filter, MoreHorizontal, RefreshCw, Search, X } from "lucide-react"
+import { CheckCircle2, Clock, Download, FileText, Filter, RefreshCw, Search, X } from "lucide-react"
 
 // Generate random data
 const generateRandomData = () => {
@@ -461,15 +461,18 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="min-w-[250px]">Comments</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead className="min-w-[300px]">Comments</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedData.length > 0 ? (
                 paginatedData.map((item) => (
-                  <TableRow key={item.id} className={selectedRows.includes(item.id) ? "bg-blue-50" : ""}>
-                    <TableCell>
+                  <TableRow
+                    key={item.id}
+                    className={`${selectedRows.includes(item.id) ? "bg-blue-50" : ""} hover:bg-gray-50 cursor-pointer`}
+                    onClick={() => toggleRowSelection(item.id)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedRows.includes(item.id)}
                         onCheckedChange={() => toggleRowSelection(item.id)}
@@ -489,7 +492,7 @@ export default function OnboardingPage() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="block max-w-[250px] truncate text-sm text-gray-600">{item.comments}</span>
+                            <span className="block max-w-[300px] truncate text-sm text-gray-600">{item.comments}</span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="max-w-xs">{item.comments}</p>
@@ -497,28 +500,11 @@ export default function OnboardingPage() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu for {item.controlPartner}</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Status</DropdownMenuItem>
-                          <DropdownMenuItem>Add Comment</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Remove</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <FileText className="h-8 w-8 mb-2" />
                       <p className="text-sm">No records found matching your criteria</p>
@@ -647,10 +633,7 @@ export default function OnboardingPage() {
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                   className="rounded-l-none border-l-0"
-                >
-                  <span className="sr-only">Last page</span>
-                  <span aria-hidden="true">»</span>
-                </Button>
+                />
               </div>
             </div>
           </div>
