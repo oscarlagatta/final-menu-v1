@@ -7,8 +7,15 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Search,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Filter,
   Download,
   RefreshCw,
@@ -22,6 +29,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  EyeOff,
 } from "lucide-react"
 
 // Anonymized audit log data
@@ -149,26 +157,34 @@ const auditLogData = [
 ]
 
 const actionTypes = ["All Actions", "CREATE", "UPDATE", "DELETE", "VIEW"]
-const modules = [
-  "All Modules",
-  "Onboarding",
-  "Resource Alignment",
-  "Service Alignment",
-  "Application Details",
-  "Additional Details",
-]
 
-type SortField = "timestamp" | "userName" | "action" | "fieldName"
+type SortField = "timestamp" | "userName" | "action" | "fieldName" | "resourceName"
 type SortDirection = "asc" | "desc"
+
+interface Column {
+  id: string
+  label: string
+  sortable: boolean
+  visible: boolean
+}
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedAction, setSelectedAction] = useState("All Actions")
-  const [selectedModule, setSelectedModule] = useState("All Modules")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sortField, setSortField] = useState<SortField>("timestamp")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [columns, setColumns] = useState<Column[]>([
+    { id: "fieldName", label: "Field Name", sortable: true, visible: true },
+    { id: "resourceName", label: "Resource Name", sortable: true, visible: true },
+    { id: "updatedValue", label: "Updated Value", sortable: false, visible: true },
+    { id: "previousValue", label: "Previous Value", sortable: false, visible: true },
+    { id: "action", label: "Action", sortable: true, visible: true },
+    { id: "userName", label: "Who", sortable: true, visible: true },
+    { id: "timestamp", label: "When", sortable: true, visible: true },
+  ])
 
   // Filter and sort data
   const filteredData = useMemo(() => {
@@ -181,9 +197,8 @@ export default function AuditLogs() {
         log.resourceName.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesAction = selectedAction === "All Actions" || log.action === selectedAction
-      const matchesModule = selectedModule === "All Modules" || log.module === selectedModule
 
-      return matchesSearch && matchesAction && matchesModule
+      return matchesSearch && matchesAction
     })
 
     // Sort data
@@ -204,7 +219,7 @@ export default function AuditLogs() {
     })
 
     return filtered
-  }, [searchTerm, selectedAction, selectedModule, sortField, sortDirection])
+  }, [searchTerm, selectedAction, sortField, sortDirection])
 
   // Pagination
   const totalPages = Math.ceil(filteredData.length / pageSize)
@@ -236,31 +251,34 @@ export default function AuditLogs() {
     })
   }
 
-  const getActionBadgeColor = (action: string) => {
+  const getActionColor = (action: string) => {
     switch (action) {
       case "CREATE":
-        return "bg-green-100 text-green-800 hover:bg-green-200"
+        return "text-green-600"
       case "UPDATE":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-200"
+        return "text-blue-600"
       case "DELETE":
-        return "bg-red-100 text-red-800 hover:bg-red-200"
+        return "text-red-600"
       case "VIEW":
-        return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+        return "text-gray-600"
       default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+        return "text-gray-600"
     }
   }
 
-  const getModuleBadgeColor = (module: string) => {
-    const colors = [
-      "bg-purple-100 text-purple-800",
-      "bg-indigo-100 text-indigo-800",
-      "bg-cyan-100 text-cyan-800",
-      "bg-teal-100 text-teal-800",
-      "bg-orange-100 text-orange-800",
-    ]
-    const index = modules.indexOf(module) % colors.length
-    return colors[index] || "bg-gray-100 text-gray-800"
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case "CREATE":
+        return "○"
+      case "UPDATE":
+        return "◐"
+      case "DELETE":
+        return "⊘"
+      case "VIEW":
+        return "◯"
+      default:
+        return "○"
+    }
   }
 
   // Summary statistics
@@ -273,7 +291,6 @@ export default function AuditLogs() {
     {} as Record<string, number>,
   )
 
-  // Ensure all action types have default values
   const defaultActionCounts = {
     CREATE: 0,
     UPDATE: 0,
@@ -284,8 +301,30 @@ export default function AuditLogs() {
 
   const activeFiltersCount = [searchTerm !== "", selectedAction !== "All Actions"].filter(Boolean).length
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(paginatedData.map((log) => log.id))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (logId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRows([...selectedRows, logId])
+    } else {
+      setSelectedRows(selectedRows.filter((id) => id !== logId))
+    }
+  }
+
+  const toggleColumnVisibility = (columnId: string) => {
+    setColumns(columns.map((col) => (col.id === columnId ? { ...col, visible: !col.visible } : col)))
+  }
+
+  const visibleColumns = columns.filter((col) => col.visible)
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -367,198 +406,206 @@ export default function AuditLogs() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary">
-                {activeFiltersCount} active filter{activeFiltersCount !== 1 ? "s" : ""}
+      {/* Toolbar */}
+      <div className="flex items-center justify-between py-4">
+        <div className="flex flex-1 items-center space-x-2">
+          <Input
+            placeholder="Filter audit logs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-8 w-[150px] lg:w-[250px]"
+          />
+          <Button variant="outline" size="sm" className="h-8 border-dashed" onClick={() => {}}>
+            <Filter className="mr-2 h-4 w-4" />
+            Action
+            {selectedAction !== "All Actions" && (
+              <Badge variant="secondary" className="ml-2 rounded-sm px-1 font-normal">
+                1
               </Badge>
             )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search logs by user, description, field, or resource..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+          </Button>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSearchTerm("")
+                setSelectedAction("All Actions")
+              }}
+              className="h-8 px-2 lg:px-3"
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" className="h-8">
+            <Eye className="mr-2 h-4 w-4" />
+            View
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all"
                 />
-              </div>
-            </div>
-            <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
+              </TableHead>
+              {visibleColumns.map((column) => (
+                <TableHead key={column.id}>
+                  {column.sortable ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent">
+                          <span>{column.label}</span>
+                          {getSortIcon(column.id as SortField)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => handleSort(column.id as SortField)}>
+                          <ArrowUp className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                          Asc
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSort(column.id as SortField)}>
+                          <ArrowDown className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                          Desc
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => toggleColumnVisibility(column.id)}>
+                          <EyeOff className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                          Hide
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <span className="font-medium">{column.label}</span>
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedData.map((log) => (
+              <TableRow key={log.id} className={selectedRows.includes(log.id) ? "bg-muted/50" : ""}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedRows.includes(log.id)}
+                    onCheckedChange={(checked) => handleSelectRow(log.id, checked as boolean)}
+                    aria-label={`Select row ${log.id}`}
+                  />
+                </TableCell>
+                {visibleColumns.map((column) => (
+                  <TableCell key={column.id}>
+                    {column.id === "fieldName" && <div className="font-medium">{log.fieldName}</div>}
+                    {column.id === "resourceName" && (
+                      <div className="max-w-[200px] truncate" title={log.resourceName}>
+                        {log.resourceName}
+                      </div>
+                    )}
+                    {column.id === "updatedValue" && (
+                      <div className="max-w-[150px] truncate" title={log.updatedValue || "N/A"}>
+                        {log.updatedValue || <span className="text-muted-foreground">N/A</span>}
+                      </div>
+                    )}
+                    {column.id === "previousValue" && (
+                      <div className="max-w-[150px] truncate" title={log.previousValue || "N/A"}>
+                        {log.previousValue || <span className="text-muted-foreground">N/A</span>}
+                      </div>
+                    )}
+                    {column.id === "action" && (
+                      <div className={`flex items-center ${getActionColor(log.action)}`}>
+                        <span className="mr-2">{getActionIcon(log.action)}</span>
+                        {log.action}
+                      </div>
+                    )}
+                    {column.id === "userName" && <div className="font-medium">{log.userName}</div>}
+                    {column.id === "timestamp" && (
+                      <div className="font-mono text-sm">{formatTimestamp(log.timestamp)}</div>
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {selectedRows.length} of {filteredData.length} row(s) selected.
+        </div>
+        <div className="flex items-center space-x-6 lg:space-x-8">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm font-medium">Rows per page</p>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => {
+                setPageSize(Number(value))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {actionTypes.map((action) => (
-                  <SelectItem key={action} value={action}>
-                    {action}
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-gray-600">Active filters:</span>
-              {searchTerm && (
-                <Badge variant="outline" className="gap-1">
-                  Search: "{searchTerm}"
-                  <button onClick={() => setSearchTerm("")} className="ml-1 hover:bg-gray-200 rounded-full p-0.5">
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {selectedAction !== "All Actions" && (
-                <Badge variant="outline" className="gap-1">
-                  Action: {selectedAction}
-                  <button
-                    onClick={() => setSelectedAction("All Actions")}
-                    className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm("")
-                  setSelectedAction("All Actions")
-                }}
-                className="text-xs"
-              >
-                Clear all
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Audit Logs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Audit Trail</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Field Name</TableHead>
-                  <TableHead>Resource Name</TableHead>
-                  <TableHead>Updated Value</TableHead>
-                  <TableHead>Previous Value</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Who</TableHead>
-                  <TableHead>When</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.map((log) => (
-                  <TableRow key={log.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{log.fieldName}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={log.resourceName}>
-                      {log.resourceName}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={log.updatedValue || "N/A"}>
-                      {log.updatedValue || <span className="text-gray-400">N/A</span>}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={log.previousValue || "N/A"}>
-                      {log.previousValue || <span className="text-gray-400">N/A</span>}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getActionBadgeColor(log.action)}>{log.action}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{log.userName}</div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{formatTimestamp(log.timestamp)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+            Page {currentPage} of {totalPages}
           </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value))
-                  setCurrentPage(1)
-                }}
-              >
-                <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-6 lg:space-x-8">
-              <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                Page {currentPage} of {totalPages}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  className="hidden h-8 w-8 p-0 lg:flex"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="hidden h-8 w-8 p-0 lg:flex"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              <span className="sr-only">Go to first page</span>
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <span className="sr-only">Go to next page</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              <span className="sr-only">Go to last page</span>
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-
-          <div className="text-xs text-gray-500 mt-2">
-            Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredData.length)} of {filteredData.length}{" "}
-            entries
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
